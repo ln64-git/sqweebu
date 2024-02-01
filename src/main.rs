@@ -1,60 +1,39 @@
-// region: --- Modules
-mod utils;
-use crate::clipboard::clipboard;
-use crate::speak::speak_clipboard;
-use crate::utils::clipboard;
+use dotenv::dotenv;
+use futures::Stream;
+use response_engine::{generate_text, get_azure_response, get_clipboard, listen_to_audio_stream};
 use std::env;
-use utils::speak::speak;
-use utils::{ollama, speak};
-// endregion: --- Modules
+use std::error::Error;
 
 #[tokio::main]
-async fn main() {
-    // speak("Chatbot initialized.");
+async fn main() -> Result<(), Box<dyn Error>> {
+    dotenv().ok();
+
+    let subscription_key = env::var("API_KEY")?;
+    let region = "eastus";
+    let voice_gender = "Female";
+    let voice_name = "en-US-JennyNeural";
+    let output_format = "audio-48khz-192kbitrate-mono-mp3";
+
+    let prompt_final = format!("{}{}", "Explain this...", "Rome");
+    println!("{:?}\n", prompt_final);
+
     let model = "llama2-uncensored";
-    let binding = "--help".to_string();
-    let args: Vec<String> = env::args().collect();
-    let primary_function = args.get(1).unwrap_or(&binding);
-    match primary_function.as_str() {
-        "--converse" => {
-            speak("Do you have something you'd like to say?");
-            return;
-        }
-        "--pull_clipboard" => {
-            let secondary_function = args.get(2).unwrap_or(&binding);
-            match secondary_function.as_str() {
-                "--converse" => {
-                    speak("What is it?");
-                }
-                "--speak" => {
-                    speak_clipboard();
-                }
-                "--respond" => {
-                    let default_prompt_prelude = "Explain this...";
-                    let prompt_prelude = args
-                        .get(3)
-                        .map(|s| s.as_str())
-                        .unwrap_or(default_prompt_prelude);
-                    let prompt_input = match clipboard::clipboard() {
-                        Ok(text) => text,
-                        Err(err) => {
-                            eprintln!("Error: Unable to paste text from the clipboard: {}", err);
-                            return;
-                        }
-                    };
-                    let final_prompt = format!("{} {}", prompt_prelude, prompt_input);
-                    ollama::generate_text(model, final_prompt).await;
-                }
-                _ => {
-                    return;
-                }
-            }
-        }
-        "--help" => {
-            println!("Usage: chatbot [--converse | --parse_clipboard [--speak_clipboard | --response] [prompt_prelude]]");
-        }
-        _ => {
-            return;
-        }
+
+    // Check if generate_text returns an error.
+    let sentences = generate_text(model, prompt_final).await?;
+    for sentence in sentences {
+        println!("{}", sentence);
+        let tts_response = get_azure_response(
+            &subscription_key,
+            &region,
+            &sentence,
+            &voice_gender,
+            &voice_name,
+            &output_format,
+        )
+        .await?; // Handle the Result from get_azure_response
+        listen_to_audio_stream(tts_response).await?; // Handle the Result from listen_to_audio_stream
     }
+
+    Ok(())
 }
