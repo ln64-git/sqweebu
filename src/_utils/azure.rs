@@ -1,5 +1,7 @@
+use std::error::Error;
+
 use dotenv::dotenv;
-use reqwest::Error as ReqwestError;
+use reqwest::{Error as ReqwestError, Response};
 
 pub async fn get_azure_response(
     subscription_key: &str,

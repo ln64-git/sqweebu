@@ -6,4 +6,4 @@ pub use crate::_utils::audio::save_audio_to_temp;
 pub use crate::_utils::azure::get_azure_response;
 pub use crate::_utils::clipboard::get_clipboard;
 pub use crate::_utils::dummy_api::get_response;
-pub use crate::_utils::ollama::generate_text;
+pub use crate::_utils::ollama::generate_text_api;
