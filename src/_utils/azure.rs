@@ -1,17 +1,18 @@
-use std::error::Error;
+use std::{env, error::Error};
 
 use dotenv::dotenv;
 use reqwest::{Error as ReqwestError, Response};
 
-pub async fn get_azure_response(
-    subscription_key: &str,
-    region: &str,
-    text_to_speak: &str,
-    voice_gender: &str,
-    voice_name: &str,
-    output_format: &str,
-) -> Result<reqwest::Response, ReqwestError> {
+pub async fn get_azure_response(text_to_speak: &str) -> Result<reqwest::Response, ReqwestError> {
     dotenv().ok();
+
+    let model = "llama2-uncensored";
+    let subscription_key = env::var("API_KEY").unwrap();
+    let region = "eastus";
+    let voice_gender = "Female";
+    let voice_name = "en-US-JennyNeural";
+    let output_format = "audio-48khz-192kbitrate-mono-mp3";
+
     let token_url = format!(
         "https://{}.api.cognitive.microsoft.com/sts/v1.0/issueToken",
         region

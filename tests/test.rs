@@ -32,22 +32,10 @@ mod tests {
         #[tokio::test]
         async fn test_get_azure_response() {
             dotenv().ok();
-            let subscription_key = env::var("API_KEY").unwrap();
-            let region = "eastus";
             let text_to_speak = "Hello, this is a test.";
-            let voice_gender = "Female";
-            let voice_name = "en-US-AriaNeural";
-            let output_format = "audio-16khz-128kbitrate-mono-mp3";
 
-            let response: Result<reqwest::Response, ReqwestError> = get_azure_response(
-                &subscription_key,
-                region,
-                text_to_speak,
-                voice_gender,
-                voice_name,
-                output_format,
-            )
-            .await;
+            let response: Result<reqwest::Response, ReqwestError> =
+                get_azure_response(text_to_speak).await;
             handle_response(response);
         }
 

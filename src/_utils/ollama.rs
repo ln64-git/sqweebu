@@ -19,19 +19,16 @@ struct PartialGenerateResponse {
     done: Option<bool>,
 }
 
-pub async fn generate_text_api(
-    model: &str,
+pub async fn ollama_generate_api(
     final_prompt: String,
     tx: mpsc::Sender<String>,
 ) -> Result<(), Box<dyn Error>> {
     let client = reqwest::Client::new();
     let request_body = GenerateRequest {
-        model: model.to_string(),
+        model: "llama2-uncensored".to_string(),
         prompt: final_prompt,
-        stream: true, // Enable streaming
+        stream: true,
     };
-
-    let start_time = Utc::now();
 
     let mut response_stream = client
         .post("http://localhost:11434/api/generate")
@@ -51,15 +48,9 @@ pub async fn generate_text_api(
                 Ok(partial_response) => {
                     accumulated_response.push_str(&partial_response.response);
                     if accumulated_response.ends_with(['.', '?', '!']) {
-                        let sentence_found = Utc::now();
-                        println!(
-                            "Sentence found after {} seconds: {}",
-                            sentence_found
-                                .signed_duration_since(start_time)
-                                .num_seconds(),
-                            accumulated_response,
-                        );
+                        println!("Sentance Found \n {}", accumulated_response);
                         tx.send(accumulated_response.clone()).await?;
+                        print!("Sentence Sent \n");
                         accumulated_response.clear();
                     }
                 }
@@ -69,11 +60,8 @@ pub async fn generate_text_api(
             }
         }
     }
-
-    // Send any remaining text after the stream ends
     if !accumulated_response.is_empty() {
         tx.send(accumulated_response).await?;
     }
-
     Ok(())
 }
