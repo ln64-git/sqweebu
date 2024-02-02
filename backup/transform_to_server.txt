@@ -1,0 +1,269 @@
+here is my project
+
+// src/main.rs
+
+// region: --- modules
+use response_engine::speak_ollama;
+use std::error::Error;
+// endregion: --- modules
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn Error>> {
+    let prompt_final = format!(
+        "{}",
+        "tell me something interesting use of pink floyd in three sentences"
+    );
+    let _ = speak_ollama(prompt_final).await;
+    // speak_clipboard().await;
+    Ok(())
+}
+
+// src/lib.rs
+
+mod _api;
+mod _utils;
+
+// region: --- crates
+pub use crate::_api::azure::azure_response_to_audio;
+pub use crate::_api::azure::get_azure_response;
+pub use crate::_api::ollama::ollama_generate_api;
+pub use crate::_api::ollama::speak_ollama;
+pub use crate::_utils::audio::play_audio_data;
+pub use crate::_utils::audio::speak_text;
+pub use crate::_utils::clipboard::get_clipboard;
+pub use crate::_utils::clipboard::speak_clipboard;
+// endregion: --- crates
+
+// region: --- imports
+use rodio::Sink;
+use std::sync::atomic::AtomicBool;
+use std::sync::{Arc, Mutex};
+// endregion: --- imports
+
+pub struct SpeechState {
+    pub current_sink: Option<Arc<Mutex<Sink>>>,
+    pub is_paused: AtomicBool,
+    // Add a new field to store the prompt or other playback relevant data
+    pub prompt: Arc<Mutex<Option<String>>>,
+}
+
+impl SpeechState {
+    pub fn new() -> Self {
+        SpeechState {
+            current_sink: None,
+            is_paused: AtomicBool::new(false),
+            prompt: Arc::new(Mutex::new(None)),
+        }
+    }
+    pub fn set_prompt(&mut self, prompt: String) {
+        let mut prompt_lock = self.prompt.lock().unwrap();
+        *prompt_lock = Some(prompt);
+    }
+
+    pub fn clear_prompt(&mut self) {
+        let mut prompt_lock = self.prompt.lock().unwrap();
+        *prompt_lock = None;
+    }
+}
+// src/api/azure.rs
+
+use reqwest::Response;
+use std::env;
+use std::error::Error;
+
+use dotenv::dotenv;
+use reqwest::Error as ReqwestError;
+
+pub async fn get_azure_response(text_to_speak: &str) -> Result<reqwest::Response, ReqwestError> {
+    dotenv().ok();
+
+    let subscription_key = env::var("API_KEY").unwrap();
+    let region = "eastus";
+    let voice_gender = "Female";
+    let voice_name = "en-US-JennyNeural";
+    let output_format = "audio-48khz-192kbitrate-mono-mp3";
+
+    let token_url = format!(
+        "https://{}.api.cognitive.microsoft.com/sts/v1.0/issueToken",
+        region
+    );
+    let tts_url = format!(
+        "https://{}.tts.speech.microsoft.com/cognitiveservices/v1",
+        region
+    );
+
+    let token_response = reqwest::Client::new()
+        .post(&token_url)
+        .header("Ocp-Apim-Subscription-Key", subscription_key)
+        .header("Content-Length", "0")
+        .send()
+        .await?;
+    let access_token = token_response.text().await?;
+
+    let tts_response = reqwest::Client::new()
+        .post(&tts_url)
+        .header("Authorization", format!("Bearer {}", access_token))
+        .header("Content-Type", "application/ssml+xml")
+        .header("X-Microsoft-OutputFormat", output_format)
+        .header("User-Agent", "text-to-speech-exp")
+        .body(format!(
+            r#"<speak version='1.0' xml:lang='en-US'><voice xml:lang='en-US' xml:gender='{}' name='{}'>{}</voice></speak>"#,
+            voice_gender, voice_name, text_to_speak
+        ))
+        .send()
+        .await?;
+
+    Ok(tts_response)
+}
+
+// Function to convert Azure response to audio bytes
+pub async fn azure_response_to_audio(response: Response) -> Result<Vec<u8>, Box<dyn Error>> {
+    let audio_content = response.bytes().await?;
+    Ok(audio_content.into_iter().collect())
+}
+// src/api/ollama.rs
+
+// region: --- Modules
+use reqwest;
+use serde::{Deserialize, Serialize};
+use serde_json;
+use std::error::Error;
+use tokio::sync::mpsc;
+use tokio_stream::StreamExt;
+use crate::{get_azure_response, play_audio_data};
+// endregion: --- Modules
+
+// region: --- Structs
+#[derive(Serialize)]
+struct GenerateRequest {
+    model: String,
+    prompt: String,
+    stream: bool,
+}
+
+#[derive(Deserialize)]
+struct PartialGenerateResponse {
+    response: String,
+}
+// endregion: --- Structs
+
+pub async fn speak_ollama(prompt_final: String) -> Result<(), Box<dyn Error>> {
+    let (tx, mut rx) = mpsc::channel(32);
+    tokio::spawn(async move {
+        ollama_generate_api(prompt_final.clone(), tx)
+            .await
+            .unwrap_or_else(|e| eprintln!("Failed to generate sentences: {}", e));
+    });
+    while let Some(sentence) = rx.recv().await {
+        let tts_response = get_azure_response(&sentence).await?;
+        let audio_data = tts_response.bytes().await?.to_vec();
+        play_audio_data(audio_data).await?;
+    }
+    Ok(())
+}
+
+pub async fn ollama_generate_api(
+    final_prompt: String,
+    tx: mpsc::Sender<String>,
+) -> Result<(), Box<dyn Error>> {
+    let client = reqwest::Client::new();
+    let request_body = GenerateRequest {
+        model: "llama2-uncensored".to_string(),
+        prompt: final_prompt,
+        stream: true,
+    };
+
+    let mut response_stream = client
+        .post("http://localhost:11434/api/generate")
+        .json(&request_body)
+        .send()
+        .await?
+        .bytes_stream();
+
+    let mut accumulated_response = String::new();
+
+    while let Some(chunk) = response_stream.next().await {
+        let chunk = chunk?;
+        let chunk_text = String::from_utf8_lossy(&chunk);
+
+        for line in chunk_text.split('\n').filter(|s| !s.is_empty()) {
+            match serde_json::from_str::<PartialGenerateResponse>(line) {
+                Ok(partial_response) => {
+                    accumulated_response.push_str(&partial_response.response);
+                    if accumulated_response.ends_with(['.', '?', '!']) {
+                        tx.send(accumulated_response.clone()).await?;
+                        accumulated_response.clear();
+                    }
+                }
+                Err(e) => {
+                    eprintln!("JSON parsing error: {}", e);
+                }
+            }
+        }
+    }
+    if !accumulated_response.is_empty() {
+        tx.send(accumulated_response).await?;
+    }
+    Ok(())
+}
+// src/utils/audio.rs
+
+// region: --- modules
+use crate::{azure_response_to_audio, get_azure_response};
+use rodio::{Decoder, OutputStream, Sink};
+use std::error::Error;
+use std::io::{self, Cursor};
+// endregion: --- modules
+
+// Main speak_text function (now asynchronous) using the simplified logic
+pub async fn speak_text(text: &str) -> Result<(), Box<dyn Error>> {
+    let azure_response = get_azure_response(text).await?;
+    let audio_data = azure_response_to_audio(azure_response).await?;
+    play_audio_data(audio_data).await?;
+    Ok(())
+}
+
+// Simplified function to play audio directly from memory
+pub async fn play_audio_data(audio_data: Vec<u8>) -> Result<(), Box<dyn Error>> {
+    let (_stream, stream_handle) = OutputStream::try_default()?;
+    let sink = Sink::try_new(&stream_handle)?;
+    let source = Decoder::new(Cursor::new(audio_data))?;
+    sink.append(source);
+    sink.sleep_until_end();
+    Ok(())
+}
+// src/utils/clipboard.rs
+
+// region: --- modules
+use crate::speak_text;
+use std::error::Error;
+use std::process::Command;
+// endregion: --- modules
+
+pub async fn speak_clipboard() {
+    let clipboard_result = get_clipboard();
+    match clipboard_result {
+        Ok(clipboard) => {
+            let clipboard_str = clipboard.as_str();
+            let _ = speak_text(clipboard_str).await;
+        }
+        Err(err) => {
+            eprintln!("Error getting clipboard content: {}", err);
+        }
+    }
+}
+
+pub fn get_clipboard() -> Result<String, Box<dyn Error>> {
+    let output = Command::new("wl-paste").output()?;
+    if !output.status.success() {
+        return Err(format!(
+            "Command failed with status: {:?}, stderr: {}",
+            output.status,
+            String::from_utf8_lossy(&output.stderr)
+        )
+        .into());
+    }
+    Ok(String::from_utf8_lossy(&output.stdout).to_string())
+}
+
+I would like to restructure core aspects of this project to implement an actix server which offers endpoints to control playback of rodio audio which starts when speak_clipboard and speak_ollama endpoints are called

@@ -1,17 +1,16 @@
 // src/api/ollama.rs
 
 // region: --- Modules
+use crate::{get_azure_response, play_audio_data};
 use reqwest;
 use serde::{Deserialize, Serialize};
 use serde_json;
 use std::error::Error;
 use tokio::sync::mpsc;
 use tokio_stream::StreamExt;
-use crate::{get_azure_response, play_audio_data};
 // endregion: --- Modules
 
-// region: --- Structs
-#[derive(Serialize)]
+#[derive(Deserialize, Serialize)] // Make sure to derive Deserialize
 struct GenerateRequest {
     model: String,
     prompt: String,
@@ -22,12 +21,11 @@ struct GenerateRequest {
 struct PartialGenerateResponse {
     response: String,
 }
-// endregion: --- Structs
 
-pub async fn speak_ollama(prompt_final: String) -> Result<(), Box<dyn Error>> {
+pub async fn speak_ollama(prompt: String) -> Result<(), Box<dyn Error>> {
     let (tx, mut rx) = mpsc::channel(32);
     tokio::spawn(async move {
-        ollama_generate_api(prompt_final.clone(), tx)
+        ollama_generate_api(prompt.clone(), tx)
             .await
             .unwrap_or_else(|e| eprintln!("Failed to generate sentences: {}", e));
     });

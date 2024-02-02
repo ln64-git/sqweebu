@@ -15,33 +15,55 @@ pub use crate::_utils::clipboard::speak_clipboard;
 // endregion: --- crates
 
 // region: --- imports
+use actix_web::{web, App, HttpServer};
+use rodio::Decoder;
+use rodio::OutputStream;
+use rodio::OutputStreamHandle;
 use rodio::Sink;
+use serde::Deserialize;
+use serde::Serialize;
+use std::error::Error;
+use std::io::Cursor;
 use std::sync::atomic::AtomicBool;
 use std::sync::{Arc, Mutex};
 // endregion: --- imports
 
-pub struct SpeechState {
-    pub current_sink: Option<Arc<Mutex<Sink>>>,
-    pub is_paused: AtomicBool,
-    // Add a new field to store the prompt or other playback relevant data
-    pub prompt: Arc<Mutex<Option<String>>>,
+pub struct AudioPlaybackManager {
+    sink: Option<Sink>,
+    stream_handle: OutputStreamHandle,
 }
 
-impl SpeechState {
+impl AudioPlaybackManager {
     pub fn new() -> Self {
-        SpeechState {
-            current_sink: None,
-            is_paused: AtomicBool::new(false),
-            prompt: Arc::new(Mutex::new(None)),
+        let (_stream, stream_handle) = OutputStream::try_default().unwrap();
+        AudioPlaybackManager {
+            sink: None,
+            stream_handle,
         }
     }
-    pub fn set_prompt(&mut self, prompt: String) {
-        let mut prompt_lock = self.prompt.lock().unwrap();
-        *prompt_lock = Some(prompt);
+
+    pub fn play_audio(&mut self, audio_data: Vec<u8>) -> Result<(), Box<dyn Error>> {
+        let sink = Sink::try_new(&self.stream_handle)?;
+        let source = Decoder::new(Cursor::new(audio_data))?;
+        sink.append(source);
+        self.sink = Some(sink);
+        Ok(())
     }
 
-    pub fn clear_prompt(&mut self) {
-        let mut prompt_lock = self.prompt.lock().unwrap();
-        *prompt_lock = None;
+    pub fn pause_audio(&mut self, audio_data: Vec<u8>) -> Result<(), Box<dyn Error>> {
+        // Pause using rodio sink
+        Ok(())
+    }
+
+    pub fn resume_audio(&mut self, audio_data: Vec<u8>) -> Result<(), Box<dyn Error>> {
+        // Resume using rodio sink
+        Ok(())
+    }
+
+    pub fn stop_audio(&mut self, audio_data: Vec<u8>) -> Result<(), Box<dyn Error>> {
+        // Stop using rodio sink
+        Ok(())
     }
 }
+
+
