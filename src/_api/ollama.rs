@@ -1,13 +1,16 @@
-use chrono::prelude::*;
+// src/api/ollama.rs
+
+// region: --- Modules
 use reqwest;
 use serde::{Deserialize, Serialize};
 use serde_json;
 use std::error::Error;
 use tokio::sync::mpsc;
 use tokio_stream::StreamExt;
+use crate::{get_azure_response, play_audio_data};
+// endregion: --- Modules
 
-use crate::{get_azure_response, listen_to_audio_stream};
-
+// region: --- Structs
 #[derive(Serialize)]
 struct GenerateRequest {
     model: String,
@@ -18,22 +21,20 @@ struct GenerateRequest {
 #[derive(Deserialize)]
 struct PartialGenerateResponse {
     response: String,
-    done: Option<bool>,
 }
+// endregion: --- Structs
 
 pub async fn speak_ollama(prompt_final: String) -> Result<(), Box<dyn Error>> {
     let (tx, mut rx) = mpsc::channel(32);
-    // Spawn a separate task to generate sentences concurrently
     tokio::spawn(async move {
         ollama_generate_api(prompt_final.clone(), tx)
             .await
-            .unwrap_or_else(|e| {
-                eprintln!("Failed to generate sentences: {}", e);
-            });
+            .unwrap_or_else(|e| eprintln!("Failed to generate sentences: {}", e));
     });
     while let Some(sentence) = rx.recv().await {
         let tts_response = get_azure_response(&sentence).await?;
-        listen_to_audio_stream(tts_response).await?;
+        let audio_data = tts_response.bytes().await?.to_vec();
+        play_audio_data(audio_data).await?;
     }
     Ok(())
 }

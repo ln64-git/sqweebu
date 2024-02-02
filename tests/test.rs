@@ -1,33 +1,11 @@
 #[cfg(test)]
+
 mod tests {
-    use dotenv::dotenv;
-    use response_engine::get_azure_response;
-    use response_engine::get_response;
-    use std::env;
-
-    #[tokio::test]
-    async fn test_get_response() {
-        match get_response().await {
-            Ok(response) => match serde_json::from_value::<serde_json::Value>(response.clone()) {
-                Ok(_) => {}
-                Err(err) => {
-                    panic!("Failed to parse JSON response: {:?}", err);
-                }
-            },
-            Err(err) => {
-                panic!("Failed to get response: {:?}", err);
-            }
-        }
-    }
-
-    use reqwest::header::CONTENT_TYPE;
-
     #[cfg(test)]
     mod tests {
         use dotenv::dotenv;
         use reqwest::{header::CONTENT_TYPE, Error as ReqwestError};
         use response_engine::get_azure_response;
-        use std::env;
 
         #[tokio::test]
         async fn test_get_azure_response() {

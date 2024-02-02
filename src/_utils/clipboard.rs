@@ -1,14 +1,17 @@
+// src/utils/clipboard.rs
+
+// region: --- modules
+use crate::speak_text;
 use std::error::Error;
 use std::process::Command;
-
-use crate::speak_text;
+// endregion: --- modules
 
 pub async fn speak_clipboard() {
     let clipboard_result = get_clipboard();
     match clipboard_result {
         Ok(clipboard) => {
             let clipboard_str = clipboard.as_str();
-            speak_text(clipboard_str).await;
+            let _ = speak_text(clipboard_str).await;
         }
         Err(err) => {
             eprintln!("Error getting clipboard content: {}", err);
