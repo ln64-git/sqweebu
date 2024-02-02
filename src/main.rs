@@ -23,8 +23,8 @@ async fn speak_ollama_endpoint(
     body: web::Json<String>,
     data: web::Data<Mutex<AudioPlaybackManager>>,
 ) -> impl Responder {
-    let prompt = "In three sentences explain...";
-    let final_prompt = format!("{} {}", prompt, *body);
+    let preface = "In three sentences explain...";
+    let final_prompt = format!("{} {}", preface, *body);
     match speak_ollama(final_prompt).await {
         Ok(_) => HttpResponse::Ok().body("Spoke generated Ollama content"),
         Err(e) => HttpResponse::InternalServerError()
