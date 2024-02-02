@@ -12,6 +12,11 @@ pub use crate::_utils::audio::play_audio_data;
 pub use crate::_utils::audio::speak_text;
 pub use crate::_utils::clipboard::get_clipboard;
 pub use crate::_utils::clipboard::speak_clipboard;
+pub use crate::_utils::playback::pause_endpoint;
+pub use crate::_utils::playback::play_endpoint;
+pub use crate::_utils::playback::resume_endpoint;
+pub use crate::_utils::playback::stop_endpoint;
+
 // endregion: --- crates
 
 // region: --- imports
@@ -41,7 +46,6 @@ impl AudioPlaybackManager {
             stream_handle,
         }
     }
-
     pub fn play_audio(&mut self, audio_data: Vec<u8>) -> Result<(), Box<dyn Error>> {
         let sink = Sink::try_new(&self.stream_handle)?;
         let source = Decoder::new(Cursor::new(audio_data))?;
@@ -49,21 +53,20 @@ impl AudioPlaybackManager {
         self.sink = Some(sink);
         Ok(())
     }
-
-    pub fn pause_audio(&mut self, audio_data: Vec<u8>) -> Result<(), Box<dyn Error>> {
-        // Pause using rodio sink
+    pub fn pause_audio(&mut self) -> Result<(), Box<dyn Error>> {
+        if let Some(ref sink) = self.sink {
+            sink.pause();
+        }
         Ok(())
     }
-
-    pub fn resume_audio(&mut self, audio_data: Vec<u8>) -> Result<(), Box<dyn Error>> {
-        // Resume using rodio sink
+    pub fn resume_audio(&mut self) -> Result<(), Box<dyn Error>> {
+        if let Some(ref sink) = self.sink {
+            sink.play();
+        }
         Ok(())
     }
-
-    pub fn stop_audio(&mut self, audio_data: Vec<u8>) -> Result<(), Box<dyn Error>> {
-        // Stop using rodio sink
+    pub fn stop_audio(&mut self) -> Result<(), Box<dyn Error>> {
+        self.sink.take(); // This stops the audio by dropping the sink
         Ok(())
     }
 }
-
-

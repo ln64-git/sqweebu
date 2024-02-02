@@ -3,7 +3,10 @@
 // region: --- modules
 use actix_web::{web, App, Error, HttpResponse, HttpServer, Responder};
 use futures::FutureExt;
-use response_engine::{speak_clipboard, speak_ollama, AudioPlaybackManager};
+use response_engine::{
+    pause_endpoint, play_endpoint, resume_endpoint, speak_clipboard, speak_ollama, stop_endpoint,
+    AudioPlaybackManager,
+};
 use std::sync::Mutex;
 // endregion: --- modules
 
@@ -37,6 +40,10 @@ async fn main() -> std::io::Result<()> {
             .app_data(web::Data::new(Mutex::new(audio_manager)))
             .route("/speak_clipboard", web::get().to(speak_clipboard_endpoint))
             .route("/speak_ollama", web::post().to(speak_ollama_endpoint))
+            .route("/play", web::get().to(play_endpoint))
+            .route("/pause", web::get().to(pause_endpoint))
+            .route("/resume", web::get().to(resume_endpoint))
+            .route("/stop", web::get().to(stop_endpoint))
     })
     .bind("127.0.0.1:8080")?
     .run()
