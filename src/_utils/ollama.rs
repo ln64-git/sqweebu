@@ -6,6 +6,8 @@ use std::error::Error;
 use tokio::sync::mpsc;
 use tokio_stream::StreamExt;
 
+use crate::{get_azure_response, listen_to_audio_stream};
+
 #[derive(Serialize)]
 struct GenerateRequest {
     model: String,
@@ -17,6 +19,23 @@ struct GenerateRequest {
 struct PartialGenerateResponse {
     response: String,
     done: Option<bool>,
+}
+
+pub async fn speak_ollama(prompt_final: String) -> Result<(), Box<dyn Error>> {
+    let (tx, mut rx) = mpsc::channel(32);
+    // Spawn a separate task to generate sentences concurrently
+    tokio::spawn(async move {
+        ollama_generate_api(prompt_final.clone(), tx)
+            .await
+            .unwrap_or_else(|e| {
+                eprintln!("Failed to generate sentences: {}", e);
+            });
+    });
+    while let Some(sentence) = rx.recv().await {
+        let tts_response = get_azure_response(&sentence).await?;
+        listen_to_audio_stream(tts_response).await?;
+    }
+    Ok(())
 }
 
 pub async fn ollama_generate_api(
@@ -48,9 +67,7 @@ pub async fn ollama_generate_api(
                 Ok(partial_response) => {
                     accumulated_response.push_str(&partial_response.response);
                     if accumulated_response.ends_with(['.', '?', '!']) {
-                        println!("Sentance Found \n {}", accumulated_response);
                         tx.send(accumulated_response.clone()).await?;
-                        print!("Sentence Sent \n");
                         accumulated_response.clear();
                     }
                 }

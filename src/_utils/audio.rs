@@ -10,7 +10,24 @@ use std::time::Duration;
 use std::{fs::File, io::Write};
 use tempfile::{tempdir, TempDir};
 use tokio::fs::File as OtherFile;
+
+use crate::get_azure_response;
 // endregion: --- modules
+
+// Main speak_text function (now asynchronous)
+pub async fn speak_text(text: &str) -> Result<(), Box<dyn Error>> {
+    // Retrieve the Azure Response
+    let azure_response = get_azure_response(text).await?;
+    // Convert Azure Response to audio bytes (await here)
+    let audio_data = azure_response_to_audio(azure_response).await?;
+    // Save audio to temporary location
+    let (temp_dir, file_path) = save_audio_to_temp(&audio_data)?;
+    // Play audio from the temporary file
+    listen_to_audio_file(&file_path)?;
+    // Clean up the temporary directory
+    temp_dir.close()?;
+    Ok(())
+}
 
 pub async fn listen_to_audio_stream(response: Response) -> Result<(), Box<dyn Error>> {
     let audio_content = response.bytes().await?;
@@ -30,6 +47,7 @@ pub fn save_audio_to_temp(
     // println!("Audio content saved to temporary location: {:?}", file_path);
     Ok((temp_dir, file_path.to_string_lossy().into_owned()))
 }
+
 pub fn listen_to_audio_file(file_path: &str) -> io::Result<()> {
     let (_stream, stream_handle) = OutputStream::try_default()
         .map_err(|e| io::Error::new(io::ErrorKind::Other, format!("{:?}", e)))?;
@@ -48,4 +66,9 @@ pub fn listen_to_audio_file(file_path: &str) -> io::Result<()> {
     sink.sleep_until_end();
 
     Ok(())
+}
+
+async fn azure_response_to_audio(response: Response) -> Result<Vec<u8>, Box<dyn Error>> {
+    let audio_content = response.bytes().await?;
+    Ok(audio_content.into_iter().collect())
 }
