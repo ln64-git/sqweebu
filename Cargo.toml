@@ -8,6 +8,7 @@ edition = "2021"
 [dependencies]
 actix-web = "4.4.1"
 anyhow = "1.0.79"
+async-recursion = "1.0.5"
 bytes = "1.5.0"
 chrono = "0.4.33"
 dotenv = "0.15.0"

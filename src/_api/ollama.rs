@@ -1,12 +1,13 @@
 // src/api/ollama.rs
 
 // region: --- Modules
-use crate::{get_azure_response, play_audio_data, speak_text};
+use crate::{get_azure_response, speak_text, PlaybackCommand};
 use reqwest;
 use serde::{Deserialize, Serialize};
 use serde_json;
 use std::error::Error;
 use tokio::sync::mpsc;
+use tokio::sync::mpsc::Sender;
 use tokio_stream::StreamExt;
 // endregion: --- Modules
 
@@ -22,27 +23,28 @@ struct PartialGenerateResponse {
     response: String,
 }
 
-pub async fn speak_ollama(prompt: String) -> Result<Vec<u8>, Box<dyn Error>> {
-    let (tx, mut rx) = mpsc::channel(32);
+pub async fn speak_ollama(
+    prompt: String,
+    tx: Sender<PlaybackCommand>,
+) -> Result<(), Box<dyn Error>> {
+    let (inner_tx, mut inner_rx) = mpsc::channel::<String>(32);
     tokio::spawn(async move {
-        ollama_generate_api(prompt.clone(), tx)
-            .await
-            .unwrap_or_else(|e| eprintln!("Failed to generate sentences: {}", e));
+        if let Err(e) = ollama_generate_api(prompt.clone(), inner_tx).await {
+            eprintln!("Failed to generate sentences: {}", e);
+        }
     });
-    let mut combined_audio_data = Vec::new();
-    while let Some(sentence) = rx.recv().await {
-        // Assuming speak_text now returns Vec<u8> of audio for the sentence
-        let audio_data = speak_text(&sentence).await?;
-        println!("audio_data.len() = {}", audio_data.len());
-        // Here you would append or mix the audio data as needed
-        combined_audio_data.extend(audio_data);
+    while let Some(sentence) = inner_rx.recv().await {
+        // send a command to play the audio.
+        if let Err(e) = speak_text(&sentence, tx.clone()).await {
+            eprintln!("Error processing sentence to audio: {}", e);
+        }
     }
-    Ok(combined_audio_data)
+    Ok(())
 }
 
 pub async fn ollama_generate_api(
     final_prompt: String,
-    tx: mpsc::Sender<String>,
+    inner_tx: mpsc::Sender<String>,
 ) -> Result<(), Box<dyn Error>> {
     let client = reqwest::Client::new();
     let request_body = GenerateRequest {
@@ -69,7 +71,7 @@ pub async fn ollama_generate_api(
                 Ok(partial_response) => {
                     accumulated_response.push_str(&partial_response.response);
                     if accumulated_response.ends_with(['.', '?', '!']) {
-                        tx.send(accumulated_response.clone()).await?;
+                        inner_tx.send(accumulated_response.clone()).await?;
                         accumulated_response.clear();
                     }
                 }
@@ -80,7 +82,7 @@ pub async fn ollama_generate_api(
         }
     }
     if !accumulated_response.is_empty() {
-        tx.send(accumulated_response).await?;
+        inner_tx.send(accumulated_response).await?;
     }
     Ok(())
 }

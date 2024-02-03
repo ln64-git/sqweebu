@@ -7,6 +7,11 @@ use std::error::Error;
 use dotenv::dotenv;
 use reqwest::Error as ReqwestError;
 
+pub async fn azure_response_to_audio(response: Response) -> Result<Vec<u8>, Box<dyn Error>> {
+    let audio_content = response.bytes().await?;
+    Ok(audio_content.into_iter().collect())
+}
+
 pub async fn get_azure_response(text_to_speak: &str) -> Result<reqwest::Response, ReqwestError> {
     dotenv().ok();
 
@@ -47,10 +52,4 @@ pub async fn get_azure_response(text_to_speak: &str) -> Result<reqwest::Response
         .await?;
 
     Ok(tts_response)
-}
-
-// Function to convert Azure response to audio bytes
-pub async fn azure_response_to_audio(response: Response) -> Result<Vec<u8>, Box<dyn Error>> {
-    let audio_content = response.bytes().await?;
-    Ok(audio_content.into_iter().collect())
 }

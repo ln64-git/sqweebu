@@ -1,22 +1,24 @@
 // src/utils/clipboard.rs
 
 // region: --- modules
-use crate::speak_text;
+
+use crate::{speak_text, PlaybackCommand};
 use std::error::Error;
 use std::process::Command;
+use tokio::sync::mpsc::Sender;
 // endregion: --- modules
 
-pub async fn speak_clipboard() -> Result<(), Box<dyn Error>> {
+pub async fn speak_clipboard(tx: Sender<PlaybackCommand>) -> Result<(), Box<dyn Error>> {
     let clipboard_result = get_clipboard();
     match clipboard_result {
         Ok(clipboard_content) => {
-            // Assuming speak_text() is async and returns a Result<(), Box<dyn Error>>
-            speak_text(&clipboard_content).await?;
+            // Pass the sender to speak_text, adjusted for PlaybackCommand.
+            speak_text(&clipboard_content, tx).await?;
             Ok(())
         }
         Err(err) => {
             eprintln!("Error getting clipboard content: {}", err);
-            Err(err)
+            Err(err.into())
         }
     }
 }
