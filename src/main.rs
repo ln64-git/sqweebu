@@ -1,7 +1,9 @@
 // src/main.rs
 
+// region: --- mod
 mod _api;
 mod _utils;
+// endregion: --- mod
 
 // region: --- crates
 pub use crate::_api::azure::azure_response_to_audio;
@@ -80,28 +82,24 @@ async fn playback_control_thread(
     }
 }
 
-fn queued_playback_thread(queue_rx: mpsc::Receiver<PlaybackCommand>) {
+fn queued_playback_thread(mut queue_rx: mpsc::Receiver<PlaybackCommand>) {
     thread::spawn(move || {
-        let runtime = Runtime::new().unwrap(); // Create a new Tokio runtime in this thread
-        runtime.block_on(async {
+        let rt = Runtime::new().unwrap();
+        rt.block_on(async {
             let mut audio_manager = AudioPlaybackManager::new();
-
-            let mut queue_rx = queue_rx; // Take ownership of queue_rx in this thread
             while let Some(command) = queue_rx.recv().await {
-                match command {
-                    PlaybackCommand::Play(audio_data) => {
-                        let _ = audio_manager.play_audio(audio_data).await;
-                    }
-                    PlaybackCommand::Stop(id) => {
-                        audio_manager.stop_audio(id);
-                    }
-                    PlaybackCommand::Pause(id) => {
-                        audio_manager.pause_audio(id);
-                    }
-                    PlaybackCommand::Resume(id) => {
-                        audio_manager.resume_audio(id);
-                    }
-                    _ => {}
+                audio_manager.command_queue.push_back(command);
+                if audio_manager
+                    .is_idle
+                    .load(std::sync::atomic::Ordering::SeqCst)
+                {
+                    audio_manager
+                        .is_idle
+                        .store(false, std::sync::atomic::Ordering::SeqCst);
+                    audio_manager.start_processing_commands().await;
+                    audio_manager
+                        .is_idle
+                        .store(true, std::sync::atomic::Ordering::SeqCst);
                 }
             }
         });

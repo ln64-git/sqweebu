@@ -51,11 +51,11 @@ pub enum PlaybackCommand {
 }
 
 pub struct AudioPlaybackManager {
-    next_id: SinkId,
-    sinks: HashMap<SinkId, Sink>,
-    streams: HashMap<SinkId, OutputStream>,
-    command_queue: VecDeque<PlaybackCommand>,
-    is_idle: AtomicBool,
+    pub next_id: SinkId,
+    pub sinks: HashMap<SinkId, Sink>,
+    pub streams: HashMap<SinkId, OutputStream>,
+    pub command_queue: VecDeque<PlaybackCommand>,
+    pub is_idle: AtomicBool,
 }
 
 impl AudioPlaybackManager {
@@ -66,6 +66,14 @@ impl AudioPlaybackManager {
             streams: HashMap::new(),
             command_queue: VecDeque::new(),
             is_idle: AtomicBool::new(true),
+        }
+    }
+
+    pub async fn start_processing_commands(&mut self) {
+        while let Some(command) = self.command_queue.pop_front() {
+            self.handle_command(command)
+                .await
+                .expect("Failed to handle command");
         }
     }
 
@@ -83,7 +91,8 @@ impl AudioPlaybackManager {
             PlaybackCommand::Resume(id) => {
                 self.resume_audio(id);
             }
-        };
+            _ => {}
+        }
         Ok(())
     }
 
@@ -93,13 +102,15 @@ impl AudioPlaybackManager {
         let sink = Sink::try_new(&stream_handle)?;
         let source = Decoder::new(Cursor::new(audio_data))?;
         sink.append(source);
+        while !sink.empty() {
+            tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+        }
 
         // Assign an ID to this audio stream for management
         let id = self.next_id;
         self.sinks.insert(id, sink);
         self.streams.insert(id, stream); // Keep the OutputStream alive
         self.next_id += 1;
-
         Ok(id)
     }
 
