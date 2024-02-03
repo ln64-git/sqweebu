@@ -1,7 +1,7 @@
 // src/api/ollama.rs
 
 // region: --- Modules
-use crate::{get_azure_response, play_audio_data};
+use crate::{get_azure_response, play_audio_data, speak_text};
 use reqwest;
 use serde::{Deserialize, Serialize};
 use serde_json;
@@ -30,9 +30,7 @@ pub async fn speak_ollama(prompt: String) -> Result<(), Box<dyn Error>> {
             .unwrap_or_else(|e| eprintln!("Failed to generate sentences: {}", e));
     });
     while let Some(sentence) = rx.recv().await {
-        let tts_response = get_azure_response(&sentence).await?;
-        let audio_data = tts_response.bytes().await?.to_vec();
-        play_audio_data(audio_data).await?;
+        speak_text(&sentence).await?;
     }
     Ok(())
 }

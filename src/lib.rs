@@ -12,61 +12,66 @@ pub use crate::_utils::audio::play_audio_data;
 pub use crate::_utils::audio::speak_text;
 pub use crate::_utils::clipboard::get_clipboard;
 pub use crate::_utils::clipboard::speak_clipboard;
-pub use crate::_utils::playback::pause_endpoint;
-pub use crate::_utils::playback::play_endpoint;
-pub use crate::_utils::playback::resume_endpoint;
-pub use crate::_utils::playback::stop_endpoint;
-
 // endregion: --- crates
 
 // region: --- imports
 use actix_web::{web, App, HttpServer};
+use rodio::cpal::traits::StreamTrait;
 use rodio::Decoder;
 use rodio::OutputStream;
 use rodio::OutputStreamHandle;
 use rodio::Sink;
 use serde::Deserialize;
 use serde::Serialize;
+use std::collections::HashMap;
 use std::error::Error;
 use std::io::Cursor;
 use std::sync::atomic::AtomicBool;
 use std::sync::{Arc, Mutex};
 // endregion: --- imports
 
+type SinkId = usize;
+
 pub struct AudioPlaybackManager {
-    sink: Option<Sink>,
-    stream_handle: OutputStreamHandle,
+    sinks: HashMap<SinkId, Sink>,
+    next_id: SinkId,
 }
 
 impl AudioPlaybackManager {
     pub fn new() -> Self {
-        let (_stream, stream_handle) = OutputStream::try_default().unwrap();
         AudioPlaybackManager {
-            sink: None,
-            stream_handle,
+            sinks: HashMap::new(),
+            next_id: 0,
         }
     }
-    pub fn play_audio(&mut self, audio_data: Vec<u8>) -> Result<(), Box<dyn Error>> {
-        let sink = Sink::try_new(&self.stream_handle)?;
+
+    pub fn play_audio(&mut self, audio_data: Vec<u8>) -> Result<SinkId, Box<dyn Error>> {
+        let (_stream, stream_handle) = OutputStream::try_default()?;
+        let sink = Sink::try_new(&stream_handle)?;
         let source = Decoder::new(Cursor::new(audio_data))?;
         sink.append(source);
-        self.sink = Some(sink);
-        Ok(())
+
+        let id = self.next_id;
+        self.sinks.insert(id, sink);
+        self.next_id += 1;
+        Ok(id)
     }
-    pub fn pause_audio(&mut self) -> Result<(), Box<dyn Error>> {
-        if let Some(ref sink) = self.sink {
+
+    pub fn stop_audio(&mut self, id: SinkId) {
+        if let Some(sink) = self.sinks.remove(&id) {
+            sink.stop();
+        }
+    }
+
+    pub fn pause_audio(&mut self, id: SinkId) {
+        if let Some(sink) = self.sinks.get_mut(&id) {
             sink.pause();
         }
-        Ok(())
     }
-    pub fn resume_audio(&mut self) -> Result<(), Box<dyn Error>> {
-        if let Some(ref sink) = self.sink {
+
+    pub fn resume_audio(&mut self, id: SinkId) {
+        if let Some(sink) = self.sinks.get_mut(&id) {
             sink.play();
         }
-        Ok(())
-    }
-    pub fn stop_audio(&mut self) -> Result<(), Box<dyn Error>> {
-        self.sink.take(); // This stops the audio by dropping the sink
-        Ok(())
     }
 }
