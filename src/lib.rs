@@ -34,6 +34,7 @@ type SinkId = usize;
 
 pub struct AudioPlaybackManager {
     sinks: HashMap<SinkId, Sink>,
+    streams: HashMap<SinkId, OutputStream>, // Store OutputStreams to ensure they live as needed
     next_id: SinkId,
 }
 
@@ -41,19 +42,21 @@ impl AudioPlaybackManager {
     pub fn new() -> Self {
         AudioPlaybackManager {
             sinks: HashMap::new(),
+            streams: HashMap::new(), // Initialize the HashMap for OutputStream objects
             next_id: 0,
         }
     }
-
     pub fn play_audio(&mut self, audio_data: Vec<u8>) -> Result<SinkId, Box<dyn Error>> {
-        let (_stream, stream_handle) = OutputStream::try_default()?;
+        let (stream, stream_handle) = OutputStream::try_default()?;
         let sink = Sink::try_new(&stream_handle)?;
         let source = Decoder::new(Cursor::new(audio_data))?;
         sink.append(source);
 
         let id = self.next_id;
         self.sinks.insert(id, sink);
+        self.streams.insert(id, stream); // Keep the OutputStream alive
         self.next_id += 1;
+
         Ok(id)
     }
 

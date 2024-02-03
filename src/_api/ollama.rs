@@ -22,17 +22,22 @@ struct PartialGenerateResponse {
     response: String,
 }
 
-pub async fn speak_ollama(prompt: String) -> Result<(), Box<dyn Error>> {
+pub async fn speak_ollama(prompt: String) -> Result<Vec<u8>, Box<dyn Error>> {
     let (tx, mut rx) = mpsc::channel(32);
     tokio::spawn(async move {
         ollama_generate_api(prompt.clone(), tx)
             .await
             .unwrap_or_else(|e| eprintln!("Failed to generate sentences: {}", e));
     });
+    let mut combined_audio_data = Vec::new();
     while let Some(sentence) = rx.recv().await {
-        speak_text(&sentence).await?;
+        // Assuming speak_text now returns Vec<u8> of audio for the sentence
+        let audio_data = speak_text(&sentence).await?;
+        println!("audio_data.len() = {}", audio_data.len());
+        // Here you would append or mix the audio data as needed
+        combined_audio_data.extend(audio_data);
     }
-    Ok(())
+    Ok(combined_audio_data)
 }
 
 pub async fn ollama_generate_api(

@@ -10,11 +10,11 @@ use std::sync::Mutex;
 // endregion: --- modules
 
 // Main speak_text function (now asynchronous) using the simplified logic
-pub async fn speak_text(text: &str) -> Result<(), Box<dyn Error>> {
+pub async fn speak_text(text: &str) -> Result<Vec<u8>, Box<dyn Error>> {
+    // Logic to generate audio data from text
     let azure_response = get_azure_response(text).await?;
     let audio_data = azure_response_to_audio(azure_response).await?;
-    // play_audio_data(audio_data).await?;
-    Ok(())
+    Ok(audio_data)
 }
 
 // Simplified function to play audio directly from memory
