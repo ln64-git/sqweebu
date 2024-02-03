@@ -11,28 +11,19 @@ pub use crate::_api::ollama::speak_ollama;
 pub use crate::_utils::audio::speak_text;
 pub use crate::_utils::clipboard::get_clipboard;
 pub use crate::_utils::clipboard::speak_clipboard;
-pub use crate::_utils::endpoints::pause_audio_endpoint;
-pub use crate::_utils::endpoints::resume_audio_endpoint;
 pub use crate::_utils::endpoints::speak_clipboard_endpoint;
 pub use crate::_utils::endpoints::speak_ollama_endpoint;
-pub use crate::_utils::endpoints::stop_audio_endpoint;
 // endregion: --- crates
 
 // region: --- imports
-use actix_web::{web, App, HttpServer};
-use rodio::cpal::traits::StreamTrait;
 use rodio::Decoder;
 use rodio::OutputStream;
-use rodio::OutputStreamHandle;
 use rodio::Sink;
-use serde::Deserialize;
-use serde::Serialize;
 use std::collections::HashMap;
 use std::collections::VecDeque;
 use std::error::Error;
 use std::io::Cursor;
 use std::sync::atomic::AtomicBool;
-use std::sync::{Arc, Mutex};
 use tokio::sync::mpsc;
 // endregion: --- imports
 
@@ -44,10 +35,7 @@ pub struct AppState {
 type SinkId = usize;
 
 pub enum PlaybackCommand {
-    Play(Vec<u8>),  // Play audio data
-    Stop(SinkId),   // Stop a specific audio sink
-    Pause(SinkId),  // Pause a specific audio sink
-    Resume(SinkId), // Resume a specific audio sink
+    Play(Vec<u8>), // Play audio data
 }
 
 pub struct AudioPlaybackManager {
@@ -82,16 +70,6 @@ impl AudioPlaybackManager {
             PlaybackCommand::Play(audio_data) => {
                 self.play_audio(audio_data).await?;
             }
-            PlaybackCommand::Stop(id) => {
-                self.stop_audio(id);
-            }
-            PlaybackCommand::Pause(id) => {
-                self.pause_audio(id);
-            }
-            PlaybackCommand::Resume(id) => {
-                self.resume_audio(id);
-            }
-            _ => {}
         }
         Ok(())
     }
@@ -114,13 +92,6 @@ impl AudioPlaybackManager {
         Ok(id)
     }
 
-    pub fn stop_audio(&mut self, id: SinkId) {
-        if let Some(sink) = self.sinks.remove(&id) {
-            sink.stop();
-        }
-        self.streams.remove(&id); // Also remove the OutputStream to not keep it alive unnecessarily
-    }
-
     pub fn pause_audio(&mut self, id: SinkId) {
         if let Some(sink) = self.sinks.get_mut(&id) {
             sink.pause();
@@ -131,5 +102,12 @@ impl AudioPlaybackManager {
         if let Some(sink) = self.sinks.get_mut(&id) {
             sink.play();
         }
+    }
+
+    pub fn stop_audio(&mut self, id: SinkId) {
+        if let Some(sink) = self.sinks.remove(&id) {
+            sink.stop();
+        }
+        self.streams.remove(&id);
     }
 }

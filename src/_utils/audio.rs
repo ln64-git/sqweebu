@@ -1,11 +1,7 @@
 // src/utils/audio.rs
 
 // region: --- modules
-use actix_web::web;
-use rodio::{Decoder, OutputStream, Sink};
 use std::error::Error;
-use std::io::{self, Cursor};
-use std::sync::Mutex;
 use tokio::sync::mpsc;
 
 use crate::{azure_response_to_audio, get_azure_response, PlaybackCommand};

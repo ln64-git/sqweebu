@@ -27,7 +27,7 @@ tokio-stream = "0.1.14"
 
 
 [lints.rust]
-unused = "allow"
+# unused = "allow"
 
 [lib]
 path = "src/lib.rs"

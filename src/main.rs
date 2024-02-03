@@ -13,22 +13,18 @@ pub use crate::_api::ollama::speak_ollama;
 pub use crate::_utils::audio::speak_text;
 pub use crate::_utils::clipboard::get_clipboard;
 pub use crate::_utils::clipboard::speak_clipboard;
-pub use crate::_utils::endpoints::pause_audio_endpoint;
-pub use crate::_utils::endpoints::resume_audio_endpoint;
 pub use crate::_utils::endpoints::speak_clipboard_endpoint;
 pub use crate::_utils::endpoints::speak_ollama_endpoint;
-pub use crate::_utils::endpoints::stop_audio_endpoint;
 // endregion: --- crates
 
 // region: --- modules
 use _utils::endpoints;
-use actix_web::{web, App, HttpResponse, HttpServer, Responder};
+use actix_web::{web, App, HttpServer};
 use response_engine::{AppState, AudioPlaybackManager, PlaybackCommand};
 use std::sync::Mutex;
 use std::thread;
 use tokio::runtime::Runtime;
 use tokio::sync::mpsc;
-use tokio::task::LocalSet;
 // endregion: --- modules
 
 #[actix_web::main]
@@ -55,15 +51,6 @@ async fn main() -> std::io::Result<()> {
                 "/speak_ollama",
                 web::post().to(endpoints::speak_ollama_endpoint),
             )
-            .route(
-                "/pause/{id}",
-                web::post().to(endpoints::pause_audio_endpoint),
-            )
-            .route(
-                "/resume/{id}",
-                web::post().to(endpoints::resume_audio_endpoint),
-            )
-            .route("/stop/{id}", web::post().to(endpoints::stop_audio_endpoint))
     })
     .bind("127.0.0.1:8080")?
     .run();

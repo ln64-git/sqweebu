@@ -2,9 +2,8 @@
 
 use actix_web::{web, HttpResponse, Responder};
 use std::sync::Mutex;
-use tokio::sync::mpsc;
 
-use crate::{speak_clipboard, speak_ollama, AppState, PlaybackCommand};
+use crate::{speak_clipboard, speak_ollama, AppState};
 
 pub async fn speak_clipboard_endpoint(data: web::Data<Mutex<AppState>>) -> impl Responder {
     let tx = {
@@ -35,39 +34,4 @@ pub async fn speak_ollama_endpoint(
         Ok(_) => HttpResponse::Ok().body("Ollama content spoken."),
         Err(e) => HttpResponse::InternalServerError().body(format!("Error: {}", e)),
     }
-}
-
-// Pause audio playback
-pub async fn pause_audio_endpoint(
-    data: web::Data<Mutex<AppState>>,
-    id: web::Path<usize>, // Correctly use web::Path
-) -> impl Responder {
-    let tx = data.lock().unwrap().tx.clone();
-    if tx.send(PlaybackCommand::Pause(*id)).await.is_err() {
-        // Dereference id with * since web::Path implements Deref
-        return HttpResponse::InternalServerError().body("Failed to send pause command.");
-    }
-    HttpResponse::Ok().body(format!("Pause command sent for ID: {}", id))
-}
-
-pub async fn resume_audio_endpoint(
-    data: web::Data<Mutex<AppState>>,
-    id: web::Path<usize>, // Correctly use web::Path
-) -> impl Responder {
-    let tx = data.lock().unwrap().tx.clone();
-    if tx.send(PlaybackCommand::Resume(*id)).await.is_err() {
-        return HttpResponse::InternalServerError().body("Failed to send resume command.");
-    }
-    HttpResponse::Ok().body("Resume command sent.")
-}
-
-pub async fn stop_audio_endpoint(
-    data: web::Data<Mutex<AppState>>,
-    id: web::Path<usize>, // Correctly use web::Path
-) -> impl Responder {
-    let tx = data.lock().unwrap().tx.clone();
-    if tx.send(PlaybackCommand::Stop(*id)).await.is_err() {
-        return HttpResponse::InternalServerError().body("Failed to send stop command.");
-    }
-    HttpResponse::Ok().body("Stop command sent.")
 }
