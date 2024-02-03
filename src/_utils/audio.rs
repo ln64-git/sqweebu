@@ -3,7 +3,6 @@
 // region: --- modules
 use std::error::Error;
 use tokio::sync::mpsc;
-
 use crate::{azure_response_to_audio, get_azure_response, PlaybackCommand};
 // endregion: --- modules
 

@@ -1,7 +1,9 @@
 // src/lib.rs
 
+// region: --- mod
 mod _api;
 mod _utils;
+// endregion: --- mod
 
 // region: --- crates
 pub use crate::_api::azure::azure_response_to_audio;
@@ -31,12 +33,11 @@ pub struct AppState {
     pub tx: mpsc::Sender<PlaybackCommand>,
 }
 
-// Keeping SinkId as the mechanism for referencing sinks
-type SinkId = usize;
-
 pub enum PlaybackCommand {
-    Play(Vec<u8>), // Play audio data
+    Play(Vec<u8>),
 }
+
+type SinkId = usize;
 
 pub struct AudioPlaybackManager {
     pub next_id: SinkId,
@@ -83,31 +84,10 @@ impl AudioPlaybackManager {
         while !sink.empty() {
             tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
         }
-
-        // Assign an ID to this audio stream for management
         let id = self.next_id;
         self.sinks.insert(id, sink);
-        self.streams.insert(id, stream); // Keep the OutputStream alive
+        self.streams.insert(id, stream);
         self.next_id += 1;
         Ok(id)
-    }
-
-    pub fn pause_audio(&mut self, id: SinkId) {
-        if let Some(sink) = self.sinks.get_mut(&id) {
-            sink.pause();
-        }
-    }
-
-    pub fn resume_audio(&mut self, id: SinkId) {
-        if let Some(sink) = self.sinks.get_mut(&id) {
-            sink.play();
-        }
-    }
-
-    pub fn stop_audio(&mut self, id: SinkId) {
-        if let Some(sink) = self.sinks.remove(&id) {
-            sink.stop();
-        }
-        self.streams.remove(&id);
     }
 }
