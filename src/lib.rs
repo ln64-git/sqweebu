@@ -1,16 +1,12 @@
 // src/lib.rs
 
 // region: --- mod
-mod _api;
 mod _utils;
 // endregion: --- mod
 
 // region: --- crates
-pub use crate::_api::azure::azure_response_to_audio;
-pub use crate::_api::azure::get_azure_response;
-pub use crate::_api::ollama::ollama_generate_api;
-pub use crate::_api::ollama::speak_ollama;
-pub use crate::_utils::audio::speak_text;
+pub use crate::_utils::azure::azure_response_to_audio;
+pub use crate::_utils::azure::get_azure_response;
 pub use crate::_utils::clipboard::get_clipboard;
 pub use crate::_utils::clipboard::speak_clipboard;
 pub use crate::_utils::endpoints::pause_playback_endpoint;
@@ -18,7 +14,8 @@ pub use crate::_utils::endpoints::resume_playback_endpoint;
 pub use crate::_utils::endpoints::speak_clipboard_endpoint;
 pub use crate::_utils::endpoints::speak_ollama_endpoint;
 pub use crate::_utils::endpoints::stop_playback_endpoint;
-
+pub use crate::_utils::ollama::ollama_generate_api;
+pub use crate::_utils::ollama::speak_ollama;
 // endregion: --- crates
 
 // region: --- imports

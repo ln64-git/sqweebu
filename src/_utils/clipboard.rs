@@ -1,8 +1,8 @@
 // src/utils/clipboard.rs
 
 // region: --- modules
-
-use crate::{speak_text, PlaybackCommand};
+use crate::PlaybackCommand;
+use crate::_utils::azure::speak_text;
 use std::error::Error;
 use std::process::Command;
 use tokio::sync::mpsc::Sender;

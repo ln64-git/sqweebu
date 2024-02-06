@@ -1,7 +1,9 @@
 // src/api/ollama.rs
 
 // region: --- Modules
-use crate::{speak_text, PlaybackCommand};
+use crate::PlaybackCommand;
+use crate::_utils::azure::speak_text;
+
 use reqwest;
 use serde::{Deserialize, Serialize};
 use serde_json;
