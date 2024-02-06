@@ -3,7 +3,6 @@
 // region: --- Modules
 use crate::PlaybackCommand;
 use crate::_utils::azure::speak_text;
-
 use reqwest;
 use serde::{Deserialize, Serialize};
 use serde_json;

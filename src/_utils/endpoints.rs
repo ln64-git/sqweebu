@@ -48,7 +48,6 @@ pub async fn pause_playback_endpoint(data: web::Data<Mutex<AppState>>) -> impl R
         return HttpResponse::InternalServerError()
             .body(format!("Error sending pause command: {}", e));
     }
-    println!("Playback endpoint paused.");
     HttpResponse::Ok().body("Playback paused.")
 }
 
@@ -63,8 +62,6 @@ pub async fn stop_playback_endpoint(data: web::Data<Mutex<AppState>>) -> impl Re
         return HttpResponse::InternalServerError()
             .body(format!("Error sending stop command: {}", e));
     }
-    println!("Playback endpoint stopped.");
-
     HttpResponse::Ok().body("Playback stopped.")
 }
 
@@ -74,11 +71,9 @@ pub async fn resume_playback_endpoint(data: web::Data<Mutex<AppState>>) -> impl 
         let lock = data.lock().unwrap();
         lock.control_tx.clone()
     };
-
     if let Err(e) = control_tx.send(PlaybackCommand::Resume).await {
         return HttpResponse::InternalServerError()
             .body(format!("Error sending resume command: {}", e));
     }
-
     HttpResponse::Ok().body("Playback resumed.")
 }

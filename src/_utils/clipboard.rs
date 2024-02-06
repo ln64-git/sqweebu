@@ -12,7 +12,6 @@ pub async fn speak_clipboard(control_tx: Sender<PlaybackCommand>) -> Result<(), 
     let clipboard_result = get_clipboard();
     match clipboard_result {
         Ok(clipboard_content) => {
-            // Pass the sender to speak_text, adjusted for PlaybackCommand.
             speak_text(&clipboard_content, control_tx).await?;
             Ok(())
         }
