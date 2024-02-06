@@ -8,6 +8,8 @@ pub async fn test_endpoint(data: web::Data<Mutex<AppState>>) -> impl Responder {
         let lock = data.lock().unwrap();
         lock.control_tx.clone()
     };
-    let _ = speak_text("Hello World", control_tx);
-    HttpResponse::Ok().body("test complete")
+    match speak_text("Hello World", control_tx).await {
+        Ok(_) => HttpResponse::Ok().body("Test complete."),
+        Err(e) => HttpResponse::InternalServerError().body(format!("Error: {}", e)),
+    }
 }

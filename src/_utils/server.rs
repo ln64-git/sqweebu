@@ -18,7 +18,7 @@ fn register_endpoints(cfg: &mut web::ServiceConfig) {
         .route("/pause", web::get().to(pause_playback_endpoint))
         .route("/stop", web::get().to(stop_playback_endpoint))
         .route("/resume", web::get().to(resume_playback_endpoint))
-        .route("/", web::get().to(test_endpoint));
+        .route("/test", web::get().to(test_endpoint));
 }
 
 pub async fn launch_playback_server() -> std::io::Result<()> {

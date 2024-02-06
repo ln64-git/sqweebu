@@ -76,7 +76,6 @@ impl AudioPlaybackManager {
     pub async fn handle_command(&mut self, command: PlaybackCommand) -> Result<(), Box<dyn Error>> {
         match command {
             PlaybackCommand::Play(audio_data) => {
-                println!("Playing audio");
                 self.play_audio(audio_data).await?;
             }
             PlaybackCommand::Pause => {
@@ -118,9 +117,6 @@ impl AudioPlaybackManager {
         self.streams.insert(id, stream);
         self.current_sink = Some(id); // Set current sink ID here
         self.next_id += 1;
-
-        println!("Audio playing on sink ID: {}", id);
-
         Ok(id)
     }
 }
