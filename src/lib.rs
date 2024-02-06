@@ -13,8 +13,12 @@ pub use crate::_api::ollama::speak_ollama;
 pub use crate::_utils::audio::speak_text;
 pub use crate::_utils::clipboard::get_clipboard;
 pub use crate::_utils::clipboard::speak_clipboard;
+pub use crate::_utils::endpoints::pause_playback_endpoint;
+pub use crate::_utils::endpoints::resume_playback_endpoint;
 pub use crate::_utils::endpoints::speak_clipboard_endpoint;
 pub use crate::_utils::endpoints::speak_ollama_endpoint;
+pub use crate::_utils::endpoints::stop_playback_endpoint;
+
 // endregion: --- crates
 
 // region: --- imports
@@ -74,11 +78,13 @@ impl AudioPlaybackManager {
     pub async fn handle_command(&mut self, command: PlaybackCommand) -> Result<(), Box<dyn Error>> {
         match command {
             PlaybackCommand::Play(audio_data) => {
+                println!("Playing audio");
                 self.play_audio(audio_data).await?;
             }
             PlaybackCommand::Pause => {
                 if let Some(id) = self.current_sink {
                     if let Some(sink) = self.sinks.get(&id) {
+                        println!("Pausing audio playback");
                         sink.pause(); // Pause the current sink
                     }
                 }

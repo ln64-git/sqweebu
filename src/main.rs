@@ -15,6 +15,10 @@ pub use crate::_utils::clipboard::get_clipboard;
 pub use crate::_utils::clipboard::speak_clipboard;
 pub use crate::_utils::endpoints::speak_clipboard_endpoint;
 pub use crate::_utils::endpoints::speak_ollama_endpoint;
+
+pub use crate::_utils::endpoints::pause_playback_endpoint;
+pub use crate::_utils::endpoints::resume_playback_endpoint;
+pub use crate::_utils::endpoints::stop_playback_endpoint;
 // endregion: --- crates
 
 // region: --- modules
@@ -52,6 +56,13 @@ async fn main() -> std::io::Result<()> {
             .route(
                 "/speak_ollama",
                 web::post().to(endpoints::speak_ollama_endpoint),
+            )
+            // Register new endpoints here
+            .route("/pause", web::get().to(endpoints::pause_playback_endpoint))
+            .route("/stop", web::get().to(endpoints::stop_playback_endpoint))
+            .route(
+                "/resume",
+                web::get().to(endpoints::resume_playback_endpoint),
             )
     })
     .bind("127.0.0.1:8080")?

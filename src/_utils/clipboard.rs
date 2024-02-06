@@ -8,12 +8,12 @@ use std::process::Command;
 use tokio::sync::mpsc::Sender;
 // endregion: --- modules
 
-pub async fn speak_clipboard(tx: Sender<PlaybackCommand>) -> Result<(), Box<dyn Error>> {
+pub async fn speak_clipboard(control_tx: Sender<PlaybackCommand>) -> Result<(), Box<dyn Error>> {
     let clipboard_result = get_clipboard();
     match clipboard_result {
         Ok(clipboard_content) => {
             // Pass the sender to speak_text, adjusted for PlaybackCommand.
-            speak_text(&clipboard_content, tx).await?;
+            speak_text(&clipboard_content, control_tx).await?;
             Ok(())
         }
         Err(err) => {
