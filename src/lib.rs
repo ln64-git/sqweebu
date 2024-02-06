@@ -35,6 +35,9 @@ pub struct AppState {
 
 pub enum PlaybackCommand {
     Play(Vec<u8>),
+    Pause,
+    Stop,
+    Resume,
 }
 
 type SinkId = usize;
@@ -45,6 +48,7 @@ pub struct AudioPlaybackManager {
     pub streams: HashMap<SinkId, OutputStream>,
     pub command_queue: VecDeque<PlaybackCommand>,
     pub is_idle: AtomicBool,
+    pub current_sink: Option<SinkId>, // New field to track the current playing audio
 }
 
 impl AudioPlaybackManager {
@@ -55,6 +59,7 @@ impl AudioPlaybackManager {
             streams: HashMap::new(),
             command_queue: VecDeque::new(),
             is_idle: AtomicBool::new(true),
+            current_sink: None,
         }
     }
 
@@ -70,6 +75,28 @@ impl AudioPlaybackManager {
         match command {
             PlaybackCommand::Play(audio_data) => {
                 self.play_audio(audio_data).await?;
+            }
+            PlaybackCommand::Pause => {
+                if let Some(id) = self.current_sink {
+                    if let Some(sink) = self.sinks.get(&id) {
+                        sink.pause(); // Pause the current sink
+                    }
+                }
+            }
+            PlaybackCommand::Stop => {
+                if let Some(id) = self.current_sink.take() {
+                    // Remove the current sink from tracking
+                    if let Some(sink) = self.sinks.get(&id) {
+                        sink.stop(); // Stop the current sink
+                    }
+                }
+            }
+            PlaybackCommand::Resume => {
+                if let Some(id) = self.current_sink {
+                    if let Some(sink) = self.sinks.get(&id) {
+                        sink.play(); // Resume the current sink
+                    }
+                }
             }
         }
         Ok(())

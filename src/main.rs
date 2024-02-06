@@ -75,10 +75,10 @@ fn queued_playback_thread(mut queue_rx: mpsc::Receiver<PlaybackCommand>) {
     thread::spawn(move || {
         // Creates a new Tokio runtime specifically for this thread.
         // The Tokio runtime is necessary for executing asynchronous code block within a non-async function.
-        let rt = Runtime::new().unwrap(); // Panics if the runtime cannot be created, which is a critical failure.
-                                          // Executes an asynchronous block of code within the newly created Tokio runtime.
+        let rt = Runtime::new().unwrap();
         rt.block_on(async {
             let mut audio_manager = AudioPlaybackManager::new();
+
             // Enters a loop that continuously listens for `PlaybackCommand` messages received through the `queue_rx` channel.
             while let Some(command) = queue_rx.recv().await {
                 // Upon receiving a command, it's added to the `command_queue` of the `audio_manager`.
