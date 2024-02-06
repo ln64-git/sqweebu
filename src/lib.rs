@@ -16,6 +16,7 @@ pub use crate::_utils::endpoints::speak_ollama_endpoint;
 pub use crate::_utils::endpoints::stop_playback_endpoint;
 pub use crate::_utils::ollama::ollama_generate_api;
 pub use crate::_utils::ollama::speak_ollama;
+pub use crate::_utils::test::test_endpoint;
 // endregion: --- crates
 
 // region: --- imports

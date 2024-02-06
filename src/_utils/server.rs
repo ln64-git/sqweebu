@@ -5,6 +5,7 @@ pub use crate::_utils::endpoints::resume_playback_endpoint;
 pub use crate::_utils::endpoints::speak_clipboard_endpoint;
 pub use crate::_utils::endpoints::speak_ollama_endpoint;
 pub use crate::_utils::endpoints::stop_playback_endpoint;
+use crate::test_endpoint;
 use crate::{AppState, AudioPlaybackManager, PlaybackCommand};
 use actix_web::{web, App, HttpServer};
 use std::sync::Mutex;
@@ -16,7 +17,8 @@ fn register_endpoints(cfg: &mut web::ServiceConfig) {
         .route("/speak_ollama", web::post().to(speak_ollama_endpoint))
         .route("/pause", web::get().to(pause_playback_endpoint))
         .route("/stop", web::get().to(stop_playback_endpoint))
-        .route("/resume", web::get().to(resume_playback_endpoint));
+        .route("/resume", web::get().to(resume_playback_endpoint))
+        .route("/", web::get().to(test_endpoint));
 }
 
 pub async fn launch_playback_server() -> std::io::Result<()> {
