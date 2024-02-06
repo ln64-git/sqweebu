@@ -44,7 +44,7 @@ async fn main() -> std::io::Result<()> {
     // Server setup and start
     let server_future = HttpServer::new(move || {
         let app_state = AppState {
-            tx: control_tx.clone(),
+            control_tx: control_tx.clone(),
         };
 
         App::new()
@@ -89,7 +89,6 @@ fn queued_playback_thread(mut queue_rx: mpsc::Receiver<PlaybackCommand>) {
         let rt = Runtime::new().unwrap();
         rt.block_on(async {
             let mut audio_manager = AudioPlaybackManager::new();
-
             // Enters a loop that continuously listens for `PlaybackCommand` messages received through the `queue_rx` channel.
             while let Some(command) = queue_rx.recv().await {
                 // Upon receiving a command, it's added to the `command_queue` of the `audio_manager`.

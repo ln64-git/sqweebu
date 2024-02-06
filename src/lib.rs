@@ -34,7 +34,7 @@ use tokio::sync::mpsc;
 // endregion: --- imports
 
 pub struct AppState {
-    pub tx: mpsc::Sender<PlaybackCommand>,
+    pub control_tx: mpsc::Sender<PlaybackCommand>,
 }
 
 pub enum PlaybackCommand {
@@ -84,8 +84,7 @@ impl AudioPlaybackManager {
             PlaybackCommand::Pause => {
                 if let Some(id) = self.current_sink {
                     if let Some(sink) = self.sinks.get(&id) {
-                        println!("Pausing audio playback");
-                        sink.pause(); // Pause the current sink
+                        sink.pause();
                     }
                 }
             }
@@ -109,18 +108,21 @@ impl AudioPlaybackManager {
     }
 
     pub async fn play_audio(&mut self, audio_data: Vec<u8>) -> Result<SinkId, Box<dyn Error>> {
-        // Attempt to create an OutputStream and a Sink for playing audio
         let (stream, stream_handle) = OutputStream::try_default()?;
         let sink = Sink::try_new(&stream_handle)?;
         let source = Decoder::new(Cursor::new(audio_data))?;
+
         sink.append(source);
-        while !sink.empty() {
-            tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
-        }
+
+        // Assume playback starts immediately without blocking
         let id = self.next_id;
         self.sinks.insert(id, sink);
         self.streams.insert(id, stream);
+        self.current_sink = Some(id); // Set current sink ID here
         self.next_id += 1;
+
+        println!("Audio playing on sink ID: {}", id);
+
         Ok(id)
     }
 }

@@ -8,7 +8,7 @@ use crate::{speak_clipboard, speak_ollama, AppState, PlaybackCommand};
 pub async fn speak_clipboard_endpoint(data: web::Data<Mutex<AppState>>) -> impl Responder {
     let control_tx = {
         let lock = data.lock().unwrap();
-        lock.tx.clone()
+        lock.control_tx.clone()
     };
 
     match speak_clipboard(control_tx).await {
@@ -27,7 +27,7 @@ pub async fn speak_ollama_endpoint(
 
     let control_tx = {
         let lock = data.lock().unwrap();
-        lock.tx.clone()
+        lock.control_tx.clone()
     };
 
     match speak_ollama(final_prompt, control_tx).await {
@@ -40,14 +40,15 @@ pub async fn speak_ollama_endpoint(
 pub async fn pause_playback_endpoint(data: web::Data<Mutex<AppState>>) -> impl Responder {
     let control_tx = {
         let lock = data.lock().unwrap();
-        lock.tx.clone()
+        lock.control_tx.clone()
     };
 
     if let Err(e) = control_tx.send(PlaybackCommand::Pause).await {
+        println!("Error sending pause command: {}", e);
         return HttpResponse::InternalServerError()
             .body(format!("Error sending pause command: {}", e));
     }
-
+    println!("Playback endpoint paused.");
     HttpResponse::Ok().body("Playback paused.")
 }
 
@@ -55,13 +56,14 @@ pub async fn pause_playback_endpoint(data: web::Data<Mutex<AppState>>) -> impl R
 pub async fn stop_playback_endpoint(data: web::Data<Mutex<AppState>>) -> impl Responder {
     let control_tx = {
         let lock = data.lock().unwrap();
-        lock.tx.clone()
+        lock.control_tx.clone()
     };
 
     if let Err(e) = control_tx.send(PlaybackCommand::Stop).await {
         return HttpResponse::InternalServerError()
             .body(format!("Error sending stop command: {}", e));
     }
+    println!("Playback endpoint stopped.");
 
     HttpResponse::Ok().body("Playback stopped.")
 }
@@ -70,7 +72,7 @@ pub async fn stop_playback_endpoint(data: web::Data<Mutex<AppState>>) -> impl Re
 pub async fn resume_playback_endpoint(data: web::Data<Mutex<AppState>>) -> impl Responder {
     let control_tx = {
         let lock = data.lock().unwrap();
-        lock.tx.clone()
+        lock.control_tx.clone()
     };
 
     if let Err(e) = control_tx.send(PlaybackCommand::Resume).await {

@@ -25,17 +25,17 @@ struct PartialGenerateResponse {
 
 pub async fn speak_ollama(
     prompt: String,
-    tx: Sender<PlaybackCommand>,
+    control_tx: Sender<PlaybackCommand>,
 ) -> Result<(), Box<dyn Error>> {
-    let (inner_tx, mut inner_rx) = mpsc::channel::<String>(32);
+    let (sentence_tx, mut sentence_rx) = mpsc::channel::<String>(32);
     tokio::spawn(async move {
-        if let Err(e) = ollama_generate_api(prompt.clone(), inner_tx).await {
+        if let Err(e) = ollama_generate_api(prompt.clone(), sentence_tx).await {
             eprintln!("Failed to generate sentences: {}", e);
         }
     });
-    while let Some(sentence) = inner_rx.recv().await {
+    while let Some(sentence) = sentence_rx.recv().await {
         // send a command to play the audio.
-        if let Err(e) = speak_text(&sentence, tx.clone()).await {
+        if let Err(e) = speak_text(&sentence, control_tx.clone()).await {
             eprintln!("Error processing sentence to audio: {}", e);
         }
     }
