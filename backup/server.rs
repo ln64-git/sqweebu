@@ -1,22 +1,27 @@
 //  src/_utils/server.rs
 
-use crate::AudioRecordingManager;
-use crate::RecordingCommand;
+// region: --- Dependencies ---
+use super::endpoints::record_start_endpoint;
+use super::endpoints::record_stop_endpoint;
 pub use crate::_utils::endpoints::playback_pause_endpoint;
 pub use crate::_utils::endpoints::playback_resume_endpoint;
 pub use crate::_utils::endpoints::playback_stop_endpoint;
 pub use crate::_utils::endpoints::speak_clipboard_endpoint;
 pub use crate::_utils::endpoints::speak_ollama_endpoint;
 use crate::test_endpoint;
+use crate::AudioRecordingManager;
+use crate::RecordingCommand;
 use crate::{AppState, AudioPlaybackManager, PlaybackCommand};
 use actix_web::{web, App, HttpServer};
+use std::path::PathBuf;
+use std::sync::Arc;
 use std::sync::Mutex;
 use tokio::runtime::Runtime;
 use tokio::sync::mpsc;
 use tokio::sync::mpsc::Receiver;
+// endregion: ---
 
-use super::endpoints::record_start_endpoint;
-use super::endpoints::record_stop_endpoint;
+// region: --- Main Thread ---
 
 fn register_endpoints(cfg: &mut web::ServiceConfig) {
     cfg.route("/speak_clipboard", web::get().to(speak_clipboard_endpoint))
@@ -30,13 +35,7 @@ fn register_endpoints(cfg: &mut web::ServiceConfig) {
 }
 
 pub async fn launch_playback_server() -> std::io::Result<()> {
-    // Spawn the Queued Playback Thread
     let (record_tx, record_rx) = mpsc::channel::<RecordingCommand>(32);
-    tokio::spawn(async move {
-        recording_thread(record_rx).await;
-    });
-
-    // Spawn the Playback Control Thread
     let (playback_tx, playback_rx) = mpsc::channel::<PlaybackCommand>(32);
     let (queue_tx, queue_rx) = mpsc::channel::<PlaybackCommand>(32);
     // Spawn the Playback Control Thread
@@ -48,31 +47,36 @@ pub async fn launch_playback_server() -> std::io::Result<()> {
         queued_playback_thread(queue_rx);
     });
 
-    // Server setup and start
+    let app_state = Arc::new(Mutex::new(AppState {
+        playback_tx: playback_tx.clone(),
+        record_tx: record_tx.clone(),
+        transcribed_text: None,
+    }));
+
+    tokio::spawn(async move {
+        recording_thread(record_rx, app_state_clone).await;
+    });
+
+    // Server setup and start Main Thread
     HttpServer::new(move || {
         let app_state = AppState {
             playback_tx: playback_tx.clone(),
             record_tx: record_tx.clone(),
-            transcribed_text: None,
+            transcribed_text: None, // Initial state of AppState
         };
 
         App::new()
-            .app_data(web::Data::new(Mutex::new(app_state)))
-            .configure(register_endpoints)
+            .app_data(web::Data::new(Mutex::new(app_state))) // Sharing AppState across handlers
+            .configure(register_endpoints) // Registering your endpoints
     })
-    .bind("127.0.0.1:8080")?
+    .bind("127.0.0.1:8080")? // Binding server to localhost on port 8080
     .run()
     .await
 }
 
-async fn playback_playback_thread(
-    mut playback_rx: mpsc::Receiver<PlaybackCommand>,
-    queue_tx: mpsc::Sender<PlaybackCommand>,
-) {
-    while let Some(command) = playback_rx.recv().await {
-        let _ = queue_tx.send(command).await;
-    }
-}
+// endregion: --- Main
+
+// region: --- Plauyback Thread ---
 
 fn queued_playback_thread(mut queue_rx: mpsc::Receiver<PlaybackCommand>) {
     let rt = Runtime::new().unwrap();
@@ -96,25 +100,47 @@ fn queued_playback_thread(mut queue_rx: mpsc::Receiver<PlaybackCommand>) {
     });
 }
 
-async fn recording_thread(mut record_rx: Receiver<RecordingCommand>) {
+async fn playback_playback_thread(
+    mut playback_rx: mpsc::Receiver<PlaybackCommand>,
+    queue_tx: mpsc::Sender<PlaybackCommand>,
+) {
+    while let Some(command) = playback_rx.recv().await {
+        let _ = queue_tx.send(command).await;
+    }
+}
+
+// endregion: --- Plau
+
+// region: --- Recording Thread ---
+async fn recording_thread(
+    mut record_rx: Receiver<RecordingCommand>,
+    app_state: Arc<Mutex<AppState>>, // Assume this is defined elsewhere correctly
+) {
     let recording_manager = AudioRecordingManager::new();
+    let mut last_temp_file_path: Option<PathBuf> = None; // To keep track of the last recording path
 
     while let Some(command) = record_rx.recv().await {
         match command {
-            RecordingCommand::Start(_) => {
-                // If start_recording is async, it should be awaited
-                recording_manager
-                    .start_recording()
-                    .await
-                    .expect("Failed to start recording");
+            RecordingCommand::Start => {
+                if let Err(e) = recording_manager.start_recording().await {
+                    eprintln!("Failed to start recording: {}", e);
+                }
             }
             RecordingCommand::Stop => {
-                // If stop_recording is async, it should be awaited
-                recording_manager
-                    .stop_recording()
-                    .await
-                    .expect("Failed to stop recording");
+                if let Some(temp_file_path) = last_temp_file_path.take() {
+                    // Take the path to use and clear it
+                    if let Err(e) = recording_manager
+                        .stop_recording(&app_state, temp_file_path)
+                        .await
+                    {
+                        eprintln!("Failed to stop recording: {}", e);
+                    }
+                } else {
+                    eprintln!("No recording path available for stopping.");
+                }
             }
         }
     }
 }
+
+// endregion: --- Rec

@@ -1,10 +1,9 @@
 // src/_utils/endpoints.rs
 
 use actix_web::{web, HttpResponse, Responder};
-use response_engine::RecordingCommand;
 use std::{path::PathBuf, sync::Mutex};
 
-use crate::{speak_clipboard, speak_ollama, AppState, PlaybackCommand};
+use crate::{speak_clipboard, speak_ollama, AppState, PlaybackCommand, RecordingCommand};
 
 // region: --- Main Endpoints
 pub async fn speak_clipboard_endpoint(data: web::Data<Mutex<AppState>>) -> impl Responder {

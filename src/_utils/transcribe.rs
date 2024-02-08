@@ -1,30 +1,35 @@
-//  src/_utils/transcribe.rs
+use anyhow::{Context, Result};
+use serde_json::Value;
+use std::path::{Path, PathBuf};
+use vosk::{CompleteResult, Model, Recognizer}; // Ensure CompleteResult is correctly imported
 
-use anyhow::Result;
-use std::{env, path::Path};
-use vosk::{Model, Recognizer}; // Assuming you're using the anyhow crate for error handling
+fn serialize_complete_result(result: &CompleteResult) -> Result<String> {
+    Ok(serde_json::to_string(&result).context("Failed to serialize CompleteResult")?)
+}
 
-pub async fn speech_to_text(audio_file_path: &Path) -> Result<()> {
-    let model_path =
-        env::var("VOSK_MODEL_PATH").expect("VOSK_MODEL_PATH must be set in the .env file");
-    let model = Model::new(&model_path).expect("Failed to load model");
+pub async fn speech_to_text(audio_file_path: &Path) -> Result<String> {
+    let model_path = PathBuf::from("/home/lucian/Documents/Models/vosk-model-small-en-us-0.15");
+    let model_path_str = model_path
+        .display() // Convert PathBuf to a displayable format
+        .to_string(); // Convert displayable format to String
 
-    // Initialize the recognizer with additional settings
-    let mut recognizer = Recognizer::new(&model, 44100.0).expect("Failed to create recognizer");
-    recognizer.set_max_alternatives(10);
-    recognizer.set_words(true);
-    recognizer.set_partial_words(true);
+    let model = Model::new(&model_path_str).context("Failed to load model")?;
 
-    // Load audio data from file
-    let mut reader = hound::WavReader::open(audio_file_path)?;
+    let mut recognizer = Recognizer::new(&model, 44100.0).context("Failed to create recognizer")?;
+
+    let mut reader = hound::WavReader::open(audio_file_path).context("Failed to open WAV file")?;
     let samples: Vec<i16> = reader.samples().filter_map(Result::ok).collect();
 
-    // Process the audio data in chunks
     for chunk in samples.chunks(400) {
         recognizer.accept_waveform(chunk);
     }
 
-    // Output the final result
-    println!("{:#?}", recognizer.final_result());
-    Ok(())
+    let result = recognizer.final_result();
+    let result_str = serialize_complete_result(&result)?;
+    let result_json: Value =
+        serde_json::from_str(&result_str).context("Failed to parse result JSON")?;
+
+    let transcription = result_json["text"].as_str().unwrap_or_default().to_string();
+
+    Ok(transcription)
 }

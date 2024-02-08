@@ -29,11 +29,16 @@ use rodio::Sink;
 use std::collections::HashMap;
 use std::collections::VecDeque;
 use std::error::Error;
+use std::fs;
 use std::io::Cursor;
 use std::path::PathBuf;
 use std::sync::atomic::AtomicBool;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
+use std::sync::Mutex;
+use tempfile::NamedTempFile;
+use tokio::sync::Notify;
+
 // endregion: --- imports
 
 use tokio::sync::mpsc::Sender;
@@ -47,48 +52,86 @@ pub struct AppState {
 // region: --- Recording Manager
 
 pub enum RecordingCommand {
-    Start(PathBuf),
-    Stop,
-}
-
-pub enum RecordingControl {
     Start,
     Stop,
 }
 
-pub struct AudioRecordingManager {
+struct AudioRecordingManager {
     is_recording: Arc<AtomicBool>,
+    notify_stop: Arc<Notify>,
 }
 
 impl AudioRecordingManager {
     pub fn new() -> Self {
         Self {
             is_recording: Arc::new(AtomicBool::new(false)),
+            notify_stop: Arc::new(Notify::new()),
         }
     }
-
-    pub async fn start_recording(&self) -> Result<()> {
-        if !self.is_recording.load(Ordering::SeqCst) {
-            println!("Recording started.");
-            self.is_recording.store(true, Ordering::SeqCst);
-            Ok(()) // Explicitly return Ok to match the expected Result type
-        } else {
+    pub async fn start_recording(&self) -> Result<PathBuf> {
+        if self.is_recording.swap(true, Ordering::SeqCst) {
+            // If already recording, return an error
             println!("Recording is already in progress.");
-            Err(anyhow!("Recording is already in progress")) // Return an error if recording is already started
+            return Err(anyhow!("Recording is already in progress"));
         }
+
+        // Generate a temporary file path for recording
+        let temp_file = NamedTempFile::new()
+            .map_err(|e| anyhow!("Failed to create a temporary file for recording: {}", e))?;
+        let temp_file_path = temp_file.into_temp_path();
+
+        println!("Recording started, file path: {}", temp_file_path.display());
+        let notify_stop_clone = self.notify_stop.clone();
+
+        // Clone `temp_file_path` for use inside the async block
+        let temp_file_path_clone: PathBuf = temp_file_path.to_path_buf();
+
+        let result = record_audio(temp_file_path_clone, notify_stop_clone).await;
+
+        if let Err(e) = result {
+            eprintln!("Error during recording: {}", e);
+        }
+
+        // Successfully return the original path to the temporary file
+        Ok(temp_file_path.to_path_buf())
     }
 
-    pub async fn stop_recording(&self) -> Result<()> {
+    pub async fn stop_recording(
+        &self,
+        app_state: &Arc<Mutex<AppState>>,
+        temp_file_path: PathBuf,
+    ) -> Result<()> {
         if self.is_recording.load(Ordering::SeqCst) {
-            println!("Recording stopped.");
+            println!("Stopping recording...");
+            // Signal or perform actions necessary to stop the recording here
             self.is_recording.store(false, Ordering::SeqCst);
-            Ok(()) // Explicitly return Ok to match the expected Result type
+
+            // Process the recorded audio for speech-to-text conversion
+            let text_result = speech_to_text(&temp_file_path).await;
+            match text_result {
+                Ok(text) => {
+                    let mut app_state_guard = app_state.lock().unwrap();
+                    app_state_guard.transcribed_text = Some(text);
+                    println!("Transcription updated.");
+                }
+                Err(e) => eprintln!("Error converting speech to text: {}", e),
+            }
+
+            // Attempt to delete the temporary file
+            if let Err(e) = fs::remove_file(&temp_file_path) {
+                eprintln!("Error deleting temporary file: {}", e);
+            } else {
+                println!("Temporary file deleted successfully.");
+            }
+
+            Ok(())
         } else {
             println!("Recording is not currently active.");
-            Err(anyhow!("Recording is not currently active")) // Return an error if there's no active recording to stop
+            Err(anyhow!("Recording is not currently active"))
         }
     }
 }
+
 // endregion: --- Recording Manager
 
 // region: --- Playback Manager
