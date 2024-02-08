@@ -8,15 +8,15 @@ pub use crate::_utils::endpoints::playback_stop_endpoint;
 pub use crate::_utils::endpoints::speak_clipboard_endpoint;
 pub use crate::_utils::endpoints::speak_ollama_endpoint;
 use crate::test_endpoint;
-use crate::{AppState, AudioPlaybackManager, PlaybackCommand};
+use crate::AppState;
 use actix_web::{web, App, HttpServer};
 use std::sync::Mutex;
-use tokio::runtime::Runtime;
 use tokio::sync::mpsc;
 use tokio::sync::mpsc::Receiver;
 
 use super::endpoints::record_start_endpoint;
 use super::endpoints::record_stop_endpoint;
+use super::playback;
 
 fn register_endpoints(cfg: &mut web::ServiceConfig) {
     cfg.route("/speak_clipboard", web::get().to(speak_clipboard_endpoint))
@@ -36,17 +36,7 @@ pub async fn launch_playback_server() -> std::io::Result<()> {
         recording_thread(record_rx).await;
     });
 
-    // Spawn the Playback Control Thread
-    let (playback_tx, playback_rx) = mpsc::channel::<PlaybackCommand>(32);
-    let (queue_tx, queue_rx) = mpsc::channel::<PlaybackCommand>(32);
-    // Spawn the Playback Control Thread
-    tokio::spawn(async move {
-        playback_playback_thread(playback_rx, queue_tx.clone()).await;
-    });
-    // Spawn the Queued Playback Thread
-    std::thread::spawn(move || {
-        queued_playback_thread(queue_rx);
-    });
+    let playback_tx = playback::init_playback_channel().await;
 
     // Server setup and start
     HttpServer::new(move || {
@@ -63,37 +53,6 @@ pub async fn launch_playback_server() -> std::io::Result<()> {
     .bind("127.0.0.1:8080")?
     .run()
     .await
-}
-
-async fn playback_playback_thread(
-    mut playback_rx: mpsc::Receiver<PlaybackCommand>,
-    queue_tx: mpsc::Sender<PlaybackCommand>,
-) {
-    while let Some(command) = playback_rx.recv().await {
-        let _ = queue_tx.send(command).await;
-    }
-}
-
-fn queued_playback_thread(mut queue_rx: mpsc::Receiver<PlaybackCommand>) {
-    let rt = Runtime::new().unwrap();
-    rt.block_on(async {
-        let mut audio_manager = AudioPlaybackManager::new();
-        while let Some(command) = queue_rx.recv().await {
-            audio_manager.command_queue.push_back(command);
-            if audio_manager
-                .is_idle
-                .load(std::sync::atomic::Ordering::SeqCst)
-            {
-                audio_manager
-                    .is_idle
-                    .store(false, std::sync::atomic::Ordering::SeqCst);
-                audio_manager.start_processing_commands().await;
-                audio_manager
-                    .is_idle
-                    .store(true, std::sync::atomic::Ordering::SeqCst);
-            }
-        }
-    });
 }
 
 async fn recording_thread(mut record_rx: Receiver<RecordingCommand>) {

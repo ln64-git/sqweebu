@@ -20,8 +20,8 @@ pub use crate::_utils::test::test_endpoint;
 pub use crate::_utils::transcribe::speech_to_text;
 // endregion: --- crates
 
-use anyhow::anyhow;
 // region: --- imports
+use anyhow::anyhow;
 use anyhow::Result;
 use rodio::Decoder;
 use rodio::OutputStream;
@@ -36,6 +36,8 @@ use std::sync::atomic::Ordering;
 use std::sync::Arc;
 // endregion: --- imports
 
+// region: --- AppState
+
 use tokio::sync::mpsc::Sender;
 
 pub struct AppState {
@@ -43,6 +45,8 @@ pub struct AppState {
     pub record_tx: Sender<RecordingCommand>,
     pub transcribed_text: Option<String>,
 }
+
+// endregion: --- AppState
 
 // region: --- Recording Manager
 
@@ -89,6 +93,7 @@ impl AudioRecordingManager {
         }
     }
 }
+
 // endregion: --- Recording Manager
 
 // region: --- Playback Manager
@@ -102,7 +107,7 @@ pub enum PlaybackCommand {
 
 type SinkId = usize;
 
-pub struct AudioPlaybackManager {
+pub struct PlaybackManager {
     pub next_id: SinkId,
     pub sinks: HashMap<SinkId, Sink>,
     pub streams: HashMap<SinkId, OutputStream>,
@@ -111,9 +116,9 @@ pub struct AudioPlaybackManager {
     pub current_sink: Option<SinkId>, // New field to track the current playing audio
 }
 
-impl AudioPlaybackManager {
+impl PlaybackManager {
     pub fn new() -> Self {
-        AudioPlaybackManager {
+        PlaybackManager {
             next_id: 0,
             sinks: HashMap::new(),
             streams: HashMap::new(),

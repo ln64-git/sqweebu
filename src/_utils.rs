@@ -6,3 +6,4 @@ pub mod record;
 pub mod server;
 pub mod test;
 pub mod transcribe;
+pub mod playback;
