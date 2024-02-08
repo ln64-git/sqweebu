@@ -1,10 +1,12 @@
+//  src/_utils/server.rs
+
 #![allow(dead_code)]
 
-pub use crate::_utils::endpoints::pause_playback_endpoint;
-pub use crate::_utils::endpoints::resume_playback_endpoint;
+pub use crate::_utils::endpoints::playback_pause_endpoint;
+pub use crate::_utils::endpoints::playback_resume_endpoint;
+pub use crate::_utils::endpoints::playback_stop_endpoint;
 pub use crate::_utils::endpoints::speak_clipboard_endpoint;
 pub use crate::_utils::endpoints::speak_ollama_endpoint;
-pub use crate::_utils::endpoints::stop_playback_endpoint;
 use crate::test_endpoint;
 use crate::{AppState, AudioPlaybackManager, PlaybackCommand};
 use actix_web::{web, App, HttpServer};
@@ -12,12 +14,17 @@ use std::sync::Mutex;
 use tokio::runtime::Runtime;
 use tokio::sync::mpsc;
 
+use super::endpoints::record_start_endpoint;
+use super::endpoints::record_stop_endpoint;
+
 fn register_endpoints(cfg: &mut web::ServiceConfig) {
     cfg.route("/speak_clipboard", web::get().to(speak_clipboard_endpoint))
         .route("/speak_ollama", web::post().to(speak_ollama_endpoint))
-        .route("/pause", web::get().to(pause_playback_endpoint))
-        .route("/stop", web::get().to(stop_playback_endpoint))
-        .route("/resume", web::get().to(resume_playback_endpoint))
+        .route("/playback/pause", web::get().to(playback_pause_endpoint))
+        .route("/playback/stop", web::get().to(playback_stop_endpoint))
+        .route("/playback/resume", web::get().to(playback_resume_endpoint))
+        .route("/record/start", web::get().to(record_start_endpoint))
+        .route("/record/stop", web::get().to(record_stop_endpoint))
         .route("/test", web::get().to(test_endpoint));
 }
 

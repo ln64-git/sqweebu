@@ -9,15 +9,17 @@ pub use crate::_utils::azure::azure_response_to_audio;
 pub use crate::_utils::azure::get_azure_response;
 pub use crate::_utils::clipboard::get_clipboard;
 pub use crate::_utils::clipboard::speak_clipboard;
-pub use crate::_utils::endpoints::pause_playback_endpoint;
-pub use crate::_utils::endpoints::resume_playback_endpoint;
+pub use crate::_utils::endpoints::playback_pause_endpoint;
+pub use crate::_utils::endpoints::playback_resume_endpoint;
+pub use crate::_utils::endpoints::playback_stop_endpoint;
 pub use crate::_utils::endpoints::speak_clipboard_endpoint;
 pub use crate::_utils::endpoints::speak_ollama_endpoint;
-pub use crate::_utils::endpoints::stop_playback_endpoint;
 pub use crate::_utils::ollama::ollama_generate_api;
 pub use crate::_utils::ollama::speak_ollama;
+pub use crate::_utils::record::record_audio;
 pub use crate::_utils::server::launch_playback_server;
 pub use crate::_utils::test::test_endpoint;
+pub use crate::_utils::transcribe::speech_to_text;
 // endregion: --- crates
 
 // region: --- modules

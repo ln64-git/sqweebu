@@ -1,4 +1,4 @@
-// src/utils/clipboard.rs
+// src/_utils/clipboard.rs
 
 // region: --- modules
 use crate::PlaybackCommand;

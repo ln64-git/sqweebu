@@ -1,4 +1,4 @@
-// src/api/ollama.rs
+// src/_utils/ollama.rs
 
 // region: --- Modules
 use crate::PlaybackCommand;

@@ -1,10 +1,11 @@
-// src/utils/endpoints.rs
+// src/_utils/endpoints.rs
 
 use actix_web::{web, HttpResponse, Responder};
 use std::sync::Mutex;
 
 use crate::{speak_clipboard, speak_ollama, AppState, PlaybackCommand};
 
+// region: --- Main Endpoints
 pub async fn speak_clipboard_endpoint(data: web::Data<Mutex<AppState>>) -> impl Responder {
     let control_tx = {
         let lock = data.lock().unwrap();
@@ -35,9 +36,44 @@ pub async fn speak_ollama_endpoint(
         Err(e) => HttpResponse::InternalServerError().body(format!("Error: {}", e)),
     }
 }
+// endregion: --- Main Endpoints
 
-// Pause playback
-pub async fn pause_playback_endpoint(data: web::Data<Mutex<AppState>>) -> impl Responder {
+// region: --- Recording Endpoints
+
+pub async fn record_start_endpoint(data: web::Data<Mutex<AppState>>) -> impl Responder {
+    let control_tx = {
+        let lock = data.lock().unwrap();
+        lock.control_tx.clone()
+    };
+
+    if let Err(e) = control_tx.send(PlaybackCommand::Pause).await {
+        println!("Error sending start command: {}", e);
+        return HttpResponse::InternalServerError()
+            .body(format!("Error sending start command: {}", e));
+    }
+    HttpResponse::Ok().body("Recording started.")
+}
+
+pub async fn record_stop_endpoint(data: web::Data<Mutex<AppState>>) -> impl Responder {
+    let control_tx = {
+        let lock = data.lock().unwrap();
+        lock.control_tx.clone()
+    };
+
+    if let Err(e) = control_tx.send(PlaybackCommand::Pause).await {
+        println!("Error sending stop command: {}", e);
+        return HttpResponse::InternalServerError()
+            .body(format!("Error sending stop command: {}", e));
+    }
+    HttpResponse::Ok().body("Recording Ended.")
+}
+
+// endregion: --- Recording Endpoints
+
+// region: --- Playback Endpoints
+
+// Stop playback
+pub async fn playback_pause_endpoint(data: web::Data<Mutex<AppState>>) -> impl Responder {
     let control_tx = {
         let lock = data.lock().unwrap();
         lock.control_tx.clone()
@@ -52,7 +88,7 @@ pub async fn pause_playback_endpoint(data: web::Data<Mutex<AppState>>) -> impl R
 }
 
 // Stop playback
-pub async fn stop_playback_endpoint(data: web::Data<Mutex<AppState>>) -> impl Responder {
+pub async fn playback_stop_endpoint(data: web::Data<Mutex<AppState>>) -> impl Responder {
     let control_tx = {
         let lock = data.lock().unwrap();
         lock.control_tx.clone()
@@ -66,7 +102,7 @@ pub async fn stop_playback_endpoint(data: web::Data<Mutex<AppState>>) -> impl Re
 }
 
 // Resume playback
-pub async fn resume_playback_endpoint(data: web::Data<Mutex<AppState>>) -> impl Responder {
+pub async fn playback_resume_endpoint(data: web::Data<Mutex<AppState>>) -> impl Responder {
     let control_tx = {
         let lock = data.lock().unwrap();
         lock.control_tx.clone()
@@ -77,3 +113,5 @@ pub async fn resume_playback_endpoint(data: web::Data<Mutex<AppState>>) -> impl 
     }
     HttpResponse::Ok().body("Playback resumed.")
 }
+
+// endregion: --- Region Title
