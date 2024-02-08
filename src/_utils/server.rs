@@ -1,7 +1,5 @@
 //  src/_utils/server.rs
 
-#![allow(dead_code)]
-
 pub use crate::_utils::endpoints::playback_pause_endpoint;
 pub use crate::_utils::endpoints::playback_resume_endpoint;
 pub use crate::_utils::endpoints::playback_stop_endpoint;
@@ -10,9 +8,12 @@ pub use crate::_utils::endpoints::speak_ollama_endpoint;
 use crate::test_endpoint;
 use crate::{AppState, AudioPlaybackManager, PlaybackCommand};
 use actix_web::{web, App, HttpServer};
+use response_engine::AudioRecordingManager;
+use response_engine::RecordingCommand;
 use std::sync::Mutex;
 use tokio::runtime::Runtime;
 use tokio::sync::mpsc;
+use tokio::sync::mpsc::Receiver;
 
 use super::endpoints::record_start_endpoint;
 use super::endpoints::record_stop_endpoint;
@@ -29,20 +30,29 @@ fn register_endpoints(cfg: &mut web::ServiceConfig) {
 }
 
 pub async fn launch_playback_server() -> std::io::Result<()> {
-    let (control_tx, control_rx) = mpsc::channel::<PlaybackCommand>(32);
+    // Spawn the Queued Playback Thread
+    let (record_tx, record_rx) = mpsc::channel::<RecordingCommand>(32);
+    tokio::spawn(async move {
+        recording_thread(record_rx).await;
+    });
+
+    // Spawn the Playback Control Thread
+    let (playback_tx, playback_rx) = mpsc::channel::<PlaybackCommand>(32);
     let (queue_tx, queue_rx) = mpsc::channel::<PlaybackCommand>(32);
     // Spawn the Playback Control Thread
     tokio::spawn(async move {
-        playback_control_thread(control_rx, queue_tx.clone()).await;
+        playback_playback_thread(playback_rx, queue_tx.clone()).await;
     });
     // Spawn the Queued Playback Thread
     std::thread::spawn(move || {
         queued_playback_thread(queue_rx);
     });
+
     // Server setup and start
     HttpServer::new(move || {
         let app_state = AppState {
-            control_tx: control_tx.clone(),
+            playback_tx: playback_tx.clone(),
+            record_tx: record_tx.clone(),
         };
 
         App::new()
@@ -54,11 +64,11 @@ pub async fn launch_playback_server() -> std::io::Result<()> {
     .await
 }
 
-async fn playback_control_thread(
-    mut control_rx: mpsc::Receiver<PlaybackCommand>,
+async fn playback_playback_thread(
+    mut playback_rx: mpsc::Receiver<PlaybackCommand>,
     queue_tx: mpsc::Sender<PlaybackCommand>,
 ) {
-    while let Some(command) = control_rx.recv().await {
+    while let Some(command) = playback_rx.recv().await {
         let _ = queue_tx.send(command).await;
     }
 }
@@ -83,4 +93,27 @@ fn queued_playback_thread(mut queue_rx: mpsc::Receiver<PlaybackCommand>) {
             }
         }
     });
+}
+
+async fn recording_thread(mut record_rx: Receiver<RecordingCommand>) {
+    let recording_manager = AudioRecordingManager::new();
+
+    while let Some(command) = record_rx.recv().await {
+        match command {
+            RecordingCommand::Start(_) => {
+                // If start_recording is async, it should be awaited
+                recording_manager
+                    .start_recording()
+                    .await
+                    .expect("Failed to start recording");
+            }
+            RecordingCommand::Stop => {
+                // If stop_recording is async, it should be awaited
+                recording_manager
+                    .stop_recording()
+                    .await
+                    .expect("Failed to stop recording");
+            }
+        }
+    }
 }

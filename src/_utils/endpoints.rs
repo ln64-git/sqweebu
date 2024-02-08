@@ -1,18 +1,19 @@
 // src/_utils/endpoints.rs
 
 use actix_web::{web, HttpResponse, Responder};
-use std::sync::Mutex;
+use response_engine::RecordingCommand;
+use std::{path::PathBuf, sync::Mutex};
 
 use crate::{speak_clipboard, speak_ollama, AppState, PlaybackCommand};
 
 // region: --- Main Endpoints
 pub async fn speak_clipboard_endpoint(data: web::Data<Mutex<AppState>>) -> impl Responder {
-    let control_tx = {
+    let playback_tx = {
         let lock = data.lock().unwrap();
-        lock.control_tx.clone()
+        lock.playback_tx.clone()
     };
 
-    match speak_clipboard(control_tx).await {
+    match speak_clipboard(playback_tx).await {
         Ok(_) => HttpResponse::Ok().body("Clipboard content spoken."),
         Err(e) => HttpResponse::InternalServerError().body(format!("Error: {}", e)),
     }
@@ -26,12 +27,12 @@ pub async fn speak_ollama_endpoint(
     let preface = "In three sentences explain...";
     let final_prompt = format!("{} {}", preface, *body);
 
-    let control_tx = {
+    let playback_tx = {
         let lock = data.lock().unwrap();
-        lock.control_tx.clone()
+        lock.playback_tx.clone()
     };
 
-    match speak_ollama(final_prompt, control_tx).await {
+    match speak_ollama(final_prompt, playback_tx).await {
         Ok(_) => HttpResponse::Ok().body("Ollama content spoken."),
         Err(e) => HttpResponse::InternalServerError().body(format!("Error: {}", e)),
     }
@@ -41,31 +42,38 @@ pub async fn speak_ollama_endpoint(
 // region: --- Recording Endpoints
 
 pub async fn record_start_endpoint(data: web::Data<Mutex<AppState>>) -> impl Responder {
-    let control_tx = {
+    let record_tx = {
         let lock = data.lock().unwrap();
-        lock.control_tx.clone()
+        lock.record_tx.clone()
     };
+    // referemce temp path
+    let path = PathBuf::from("/temp/recording.wav");
 
-    if let Err(e) = control_tx.send(PlaybackCommand::Pause).await {
-        println!("Error sending start command: {}", e);
+    // Assuming the path is predetermined or not needed
+    if let Err(e) = record_tx.send(RecordingCommand::Start(path)).await {
+        // Adjusted for simplicity
+        println!("Error sending start recording command: {}", e);
         return HttpResponse::InternalServerError()
-            .body(format!("Error sending start command: {}", e));
+            .body(format!("Error sending start recording command: {}", e));
     }
-    HttpResponse::Ok().body("Recording started.")
+
+    HttpResponse::Ok().body("Recording start command sent.")
 }
 
 pub async fn record_stop_endpoint(data: web::Data<Mutex<AppState>>) -> impl Responder {
-    let control_tx = {
+    // Extract the recording manager's sender from AppState
+    let record_tx = {
         let lock = data.lock().unwrap();
-        lock.control_tx.clone()
+        lock.record_tx.clone()
     };
 
-    if let Err(e) = control_tx.send(PlaybackCommand::Pause).await {
-        println!("Error sending stop command: {}", e);
+    // Send the Stop command through the channel
+    if let Err(e) = record_tx.send(RecordingCommand::Stop).await {
+        println!("Error sending stop recording command: {}", e);
         return HttpResponse::InternalServerError()
-            .body(format!("Error sending stop command: {}", e));
+            .body(format!("Error sending stop recording command: {}", e));
     }
-    HttpResponse::Ok().body("Recording Ended.")
+    HttpResponse::Ok().body("Recording stop command sent.")
 }
 
 // endregion: --- Recording Endpoints
@@ -74,12 +82,12 @@ pub async fn record_stop_endpoint(data: web::Data<Mutex<AppState>>) -> impl Resp
 
 // Stop playback
 pub async fn playback_pause_endpoint(data: web::Data<Mutex<AppState>>) -> impl Responder {
-    let control_tx = {
+    let playback_tx = {
         let lock = data.lock().unwrap();
-        lock.control_tx.clone()
+        lock.playback_tx.clone()
     };
 
-    if let Err(e) = control_tx.send(PlaybackCommand::Pause).await {
+    if let Err(e) = playback_tx.send(PlaybackCommand::Pause).await {
         println!("Error sending pause command: {}", e);
         return HttpResponse::InternalServerError()
             .body(format!("Error sending pause command: {}", e));
@@ -89,12 +97,12 @@ pub async fn playback_pause_endpoint(data: web::Data<Mutex<AppState>>) -> impl R
 
 // Stop playback
 pub async fn playback_stop_endpoint(data: web::Data<Mutex<AppState>>) -> impl Responder {
-    let control_tx = {
+    let playback_tx = {
         let lock = data.lock().unwrap();
-        lock.control_tx.clone()
+        lock.playback_tx.clone()
     };
 
-    if let Err(e) = control_tx.send(PlaybackCommand::Stop).await {
+    if let Err(e) = playback_tx.send(PlaybackCommand::Stop).await {
         return HttpResponse::InternalServerError()
             .body(format!("Error sending stop command: {}", e));
     }
@@ -103,11 +111,11 @@ pub async fn playback_stop_endpoint(data: web::Data<Mutex<AppState>>) -> impl Re
 
 // Resume playback
 pub async fn playback_resume_endpoint(data: web::Data<Mutex<AppState>>) -> impl Responder {
-    let control_tx = {
+    let playback_tx = {
         let lock = data.lock().unwrap();
-        lock.control_tx.clone()
+        lock.playback_tx.clone()
     };
-    if let Err(e) = control_tx.send(PlaybackCommand::Resume).await {
+    if let Err(e) = playback_tx.send(PlaybackCommand::Resume).await {
         return HttpResponse::InternalServerError()
             .body(format!("Error sending resume command: {}", e));
     }

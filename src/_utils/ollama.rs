@@ -26,7 +26,7 @@ struct PartialGenerateResponse {
 
 pub async fn speak_ollama(
     prompt: String,
-    control_tx: Sender<PlaybackCommand>,
+    playback_tx: Sender<PlaybackCommand>,
 ) -> Result<(), Box<dyn Error>> {
     let (sentence_tx, mut sentence_rx) = mpsc::channel::<String>(32);
     tokio::spawn(async move {
@@ -36,7 +36,7 @@ pub async fn speak_ollama(
     });
     while let Some(sentence) = sentence_rx.recv().await {
         // send a command to play the audio.
-        if let Err(e) = speak_text(&sentence, control_tx.clone()).await {
+        if let Err(e) = speak_text(&sentence, playback_tx.clone()).await {
             eprintln!("Error processing sentence to audio: {}", e);
         }
     }

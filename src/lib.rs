@@ -1,6 +1,8 @@
 // src/lib.rs
 
+use anyhow::anyhow;
 // region: --- imports
+use anyhow::Result;
 use rodio::Decoder;
 use rodio::OutputStream;
 use rodio::Sink;
@@ -8,13 +10,67 @@ use std::collections::HashMap;
 use std::collections::VecDeque;
 use std::error::Error;
 use std::io::Cursor;
+use std::path::PathBuf;
 use std::sync::atomic::AtomicBool;
-use tokio::sync::mpsc;
+use std::sync::atomic::Ordering;
+use std::sync::Arc;
 // endregion: --- imports
 
+use tokio::sync::mpsc::Sender;
+
 pub struct AppState {
-    pub control_tx: mpsc::Sender<PlaybackCommand>,
+    pub playback_tx: Sender<PlaybackCommand>,
+    pub record_tx: Sender<RecordingCommand>,
 }
+
+// region: --- Recording Manager
+
+pub enum RecordingCommand {
+    Start(PathBuf),
+    Stop,
+}
+
+pub enum RecordingControl {
+    Start,
+    Stop,
+}
+
+pub struct AudioRecordingManager {
+    is_recording: Arc<AtomicBool>,
+}
+
+impl AudioRecordingManager {
+    pub fn new() -> Self {
+        Self {
+            is_recording: Arc::new(AtomicBool::new(false)),
+        }
+    }
+
+    pub async fn start_recording(&self) -> Result<()> {
+        if !self.is_recording.load(Ordering::SeqCst) {
+            println!("Recording started.");
+            self.is_recording.store(true, Ordering::SeqCst);
+            Ok(()) // Explicitly return Ok to match the expected Result type
+        } else {
+            println!("Recording is already in progress.");
+            Err(anyhow!("Recording is already in progress")) // Return an error if recording is already started
+        }
+    }
+
+    pub async fn stop_recording(&self) -> Result<()> {
+        if self.is_recording.load(Ordering::SeqCst) {
+            println!("Recording stopped.");
+            self.is_recording.store(false, Ordering::SeqCst);
+            Ok(()) // Explicitly return Ok to match the expected Result type
+        } else {
+            println!("Recording is not currently active.");
+            Err(anyhow!("Recording is not currently active")) // Return an error if there's no active recording to stop
+        }
+    }
+}
+// endregion: --- Recording Manager
+
+// region: --- Playback Manager
 
 pub enum PlaybackCommand {
     Play(Vec<u8>),
@@ -101,3 +157,5 @@ impl AudioPlaybackManager {
         Ok(id)
     }
 }
+
+// endregion: --- Playback Manager

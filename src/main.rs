@@ -16,7 +16,6 @@ pub use crate::_utils::endpoints::speak_clipboard_endpoint;
 pub use crate::_utils::endpoints::speak_ollama_endpoint;
 pub use crate::_utils::ollama::ollama_generate_api;
 pub use crate::_utils::ollama::speak_ollama;
-pub use crate::_utils::record::record_audio;
 pub use crate::_utils::server::launch_playback_server;
 pub use crate::_utils::test::test_endpoint;
 pub use crate::_utils::transcribe::speech_to_text;
