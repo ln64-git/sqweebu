@@ -2,12 +2,11 @@ use anyhow::{Context, Result};
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use hound::{WavSpec, WavWriter};
 use std::path::PathBuf;
-use std::sync::atomic::AtomicBool;
-use std::sync::atomic::Ordering;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
-use tokio::sync::Notify;
+use tokio;
 
-pub async fn record_audio(output_file_path: PathBuf, notify_stop: Arc<Notify>) -> Result<()> {
+pub async fn record_audio(output_file_path: PathBuf, is_recording: Arc<AtomicBool>) -> Result<()> {
     let host = cpal::default_host();
     let device = host
         .default_input_device()
@@ -30,20 +29,21 @@ pub async fn record_audio(output_file_path: PathBuf, notify_stop: Arc<Notify>) -
         WavWriter::create(output_file_path, spec).context("Failed to create WAV writer")?,
     )));
     let writer_clone = writer.clone();
-    let error_flag = Arc::new(AtomicBool::new(false));
+
+    let is_recording_clone = is_recording.clone();
+
     let stream = device.build_input_stream(
         &config,
-        // Inside the stream setup, modify the callback function like so:
         move |data: &[f32], _: &cpal::InputCallbackInfo| {
-            let mut writer_guard = writer_clone.lock().unwrap(); // Lock the mutex to access the writer
-            if let Some(ref mut writer) = *writer_guard {
-                // Dereference and pattern match to get the mutable reference to the WavWriter
-                for &sample in data.iter() {
-                    let sample_int = (sample * i16::MAX as f32) as i16; // Convert f32 sample to i16
-                    if writer.write_sample(sample_int).is_err() {
-                        // If writing sample fails, log error or handle it as needed
-                        eprintln!("Failed to write sample");
-                        break; // Exit the loop on error
+            if is_recording_clone.load(Ordering::SeqCst) {
+                let mut writer_guard = writer_clone.lock().unwrap();
+                if let Some(ref mut writer) = *writer_guard {
+                    for &sample in data.iter() {
+                        let sample_int = (sample * i16::MAX as f32) as i16;
+                        if writer.write_sample(sample_int).is_err() {
+                            eprintln!("Failed to write sample");
+                            break;
+                        }
                     }
                 }
             }
@@ -53,24 +53,15 @@ pub async fn record_audio(output_file_path: PathBuf, notify_stop: Arc<Notify>) -
     )?;
     stream.play().context("Failed to play stream")?;
 
-    let notify_future = notify_stop.notified();
-    tokio::select! {
-        _ = notify_future => {
-            println!("Received stop signal.");
-        }
-        _ = tokio::time::sleep(tokio::time::Duration::from_secs(3600)), if !error_flag.load(Ordering::SeqCst) => {
-            // This is a safeguard to stop recording after a certain time if no stop signal is received.
-            // Adjust the duration according to your needs or remove if unnecessary.
-            println!("Max recording duration reached.");
-        }
+    // Use is_recording flag to control the recording loop
+    while is_recording.load(Ordering::SeqCst) {
+        tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
     }
 
     drop(stream); // Stops the stream and recording
 
-    // Ensure the writer is dropped outside of the lock to finalize it properly
     let mut writer_guard = writer.lock().unwrap();
     if let Some(writer) = writer_guard.take() {
-        // Take the WavWriter out by replacing it with None
         writer.finalize().context("Failed to finalize WAV file")?;
     }
 
