@@ -1,7 +1,6 @@
 //  src/_utils/server.rs
 
-use crate::AudioRecordingManager;
-use crate::RecordingCommand;
+// region: --- Modules
 pub use crate::_utils::endpoints::playback_pause_endpoint;
 pub use crate::_utils::endpoints::playback_resume_endpoint;
 pub use crate::_utils::endpoints::playback_stop_endpoint;
@@ -11,12 +10,11 @@ use crate::test_endpoint;
 use crate::AppState;
 use actix_web::{web, App, HttpServer};
 use std::sync::Mutex;
-use tokio::sync::mpsc;
-use tokio::sync::mpsc::Receiver;
-
 use super::endpoints::record_start_endpoint;
 use super::endpoints::record_stop_endpoint;
 use super::playback;
+use super::record;
+// endregion: --- Modules
 
 fn register_endpoints(cfg: &mut web::ServiceConfig) {
     cfg.route("/speak_clipboard", web::get().to(speak_clipboard_endpoint))
@@ -30,13 +28,9 @@ fn register_endpoints(cfg: &mut web::ServiceConfig) {
 }
 
 pub async fn launch_playback_server() -> std::io::Result<()> {
-    // Spawn the Queued Playback Thread
-    let (record_tx, record_rx) = mpsc::channel::<RecordingCommand>(32);
-    tokio::spawn(async move {
-        recording_thread(record_rx).await;
-    });
-
+    // Playback && Recording Channel setup
     let playback_tx = playback::init_playback_channel().await;
+    let record_tx = record::init_recording_channel().await;
 
     // Server setup and start
     HttpServer::new(move || {
@@ -53,27 +47,4 @@ pub async fn launch_playback_server() -> std::io::Result<()> {
     .bind("127.0.0.1:8080")?
     .run()
     .await
-}
-
-async fn recording_thread(mut record_rx: Receiver<RecordingCommand>) {
-    let recording_manager = AudioRecordingManager::new();
-
-    while let Some(command) = record_rx.recv().await {
-        match command {
-            RecordingCommand::Start(_) => {
-                // If start_recording is async, it should be awaited
-                recording_manager
-                    .start_recording()
-                    .await
-                    .expect("Failed to start recording");
-            }
-            RecordingCommand::Stop => {
-                // If stop_recording is async, it should be awaited
-                recording_manager
-                    .stop_recording()
-                    .await
-                    .expect("Failed to stop recording");
-            }
-        }
-    }
 }

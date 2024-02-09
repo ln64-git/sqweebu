@@ -1,3 +1,6 @@
+// region: --- Modules
+use crate::AudioRecordingManager;
+use crate::RecordingCommand;
 use anyhow::{Context, Result};
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use hound::{WavSpec, WavWriter};
@@ -5,6 +8,42 @@ use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use tokio;
+use tokio::sync::mpsc;
+use tokio::sync::mpsc::{Receiver, Sender};
+// endregion: --- Modules
+
+/// Initializes the recording channel and spawns the recording thread.
+pub async fn init_recording_channel() -> Sender<RecordingCommand> {
+    let (record_tx, record_rx) = mpsc::channel::<RecordingCommand>(32);
+
+    tokio::spawn(async move {
+        recording_thread(record_rx).await;
+    });
+
+    record_tx
+}
+
+/// The recording thread function that processes recording commands.
+async fn recording_thread(mut record_rx: Receiver<RecordingCommand>) {
+    let recording_manager = AudioRecordingManager::new();
+
+    while let Some(command) = record_rx.recv().await {
+        match command {
+            RecordingCommand::Start(_) => {
+                recording_manager
+                    .start_recording()
+                    .await
+                    .expect("Failed to start recording");
+            }
+            RecordingCommand::Stop => {
+                recording_manager
+                    .stop_recording()
+                    .await
+                    .expect("Failed to stop recording");
+            }
+        }
+    }
+}
 
 pub async fn record_audio(output_file_path: PathBuf, is_recording: Arc<AtomicBool>) -> Result<()> {
     let host = cpal::default_host();
