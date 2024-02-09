@@ -79,46 +79,37 @@ pub async fn record_stop_endpoint(data: web::Data<Mutex<AppState>>) -> impl Resp
 
 // region: --- Playback Endpoints
 
-// Stop playback
-pub async fn playback_pause_endpoint(data: web::Data<Mutex<AppState>>) -> impl Responder {
-    let playback_tx = {
-        let lock = data.lock().unwrap();
-        lock.playback_tx.clone()
-    };
-
-    if let Err(e) = playback_tx.send(PlaybackCommand::Pause).await {
-        println!("Error sending pause command: {}", e);
-        return HttpResponse::InternalServerError()
-            .body(format!("Error sending pause command: {}", e));
+pub async fn playback_pause_endpoint(
+    data: web::Data<Mutex<AppState>>,
+    id: web::Path<usize>,
+) -> impl actix_web::Responder {
+    let tx = data.lock().unwrap().playback_tx.clone();
+    if let Err(_) = tx.send(PlaybackCommand::Pause(*id)).await {
+        return HttpResponse::InternalServerError().body("Failed to send pause command.");
     }
-    HttpResponse::Ok().body("Playback paused.")
+    HttpResponse::Ok().body(format!("Pause command sent for ID: {}", id))
 }
 
-// Stop playback
-pub async fn playback_stop_endpoint(data: web::Data<Mutex<AppState>>) -> impl Responder {
-    let playback_tx = {
-        let lock = data.lock().unwrap();
-        lock.playback_tx.clone()
-    };
-
-    if let Err(e) = playback_tx.send(PlaybackCommand::Stop).await {
-        return HttpResponse::InternalServerError()
-            .body(format!("Error sending stop command: {}", e));
+pub async fn playback_resume_endpoint(
+    data: web::Data<Mutex<AppState>>,
+    id: web::Path<usize>,
+) -> impl actix_web::Responder {
+    let tx = data.lock().unwrap().playback_tx.clone();
+    if let Err(_) = tx.send(PlaybackCommand::Resume(*id)).await {
+        return HttpResponse::InternalServerError().body("Failed to send resume command.");
     }
-    HttpResponse::Ok().body("Playback stopped.")
+    HttpResponse::Ok().body("Resume command sent.")
 }
 
-// Resume playback
-pub async fn playback_resume_endpoint(data: web::Data<Mutex<AppState>>) -> impl Responder {
-    let playback_tx = {
-        let lock = data.lock().unwrap();
-        lock.playback_tx.clone()
-    };
-    if let Err(e) = playback_tx.send(PlaybackCommand::Resume).await {
-        return HttpResponse::InternalServerError()
-            .body(format!("Error sending resume command: {}", e));
+pub async fn playback_stop_endpoint(
+    data: web::Data<Mutex<AppState>>,
+    id: web::Path<usize>,
+) -> impl actix_web::Responder {
+    let playback_tx = data.lock().unwrap().playback_tx.clone();
+    if let Err(_) = playback_tx.send(PlaybackCommand::Stop(*id)).await {
+        return HttpResponse::InternalServerError().body("Failed to send stop command.");
     }
-    HttpResponse::Ok().body("Playback resumed.")
+    HttpResponse::Ok().body("Stop command sent.")
 }
 
 // endregion: --- Region Title

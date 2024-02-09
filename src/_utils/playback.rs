@@ -1,3 +1,5 @@
+use std::thread;
+
 use tokio::runtime::Runtime;
 use tokio::sync::mpsc::{self, Sender};
 
@@ -7,44 +9,46 @@ pub async fn init_playback_channel() -> Sender<PlaybackCommand> {
     let (playback_tx, playback_rx) = mpsc::channel::<PlaybackCommand>(32);
     let (queue_tx, queue_rx) = mpsc::channel::<PlaybackCommand>(32);
 
-    tokio::spawn(async move {
-        playback_thread(playback_rx, queue_tx.clone()).await;
-    });
+    // Correctly spawn the Playback Control Thread as it is async
+    tokio::spawn(playback_control_thread(playback_rx, queue_tx.clone()));
 
-    std::thread::spawn(move || {
-        playback_queue_thread(queue_rx);
-    });
+    // Directly call queued_playback_thread without tokio::spawn
+    queued_playback_thread(queue_rx);
 
     playback_tx
 }
 
-async fn playback_thread(
-    mut playback_rx: mpsc::Receiver<PlaybackCommand>,
+// Playback Control Thread
+async fn playback_control_thread(
+    mut rx: mpsc::Receiver<PlaybackCommand>,
     queue_tx: mpsc::Sender<PlaybackCommand>,
 ) {
-    while let Some(command) = playback_rx.recv().await {
+    while let Some(command) = rx.recv().await {
+        // Forward commands to the third thread for queued playback
         let _ = queue_tx.send(command).await;
     }
 }
 
-fn playback_queue_thread(mut queue_rx: mpsc::Receiver<PlaybackCommand>) {
-    let rt = Runtime::new().unwrap();
-    rt.block_on(async {
-        let mut playback_manager = PlaybackManager::new();
-        while let Some(command) = queue_rx.recv().await {
-            playback_manager.command_queue.push_back(command);
-            if playback_manager
-                .is_idle
-                .load(std::sync::atomic::Ordering::SeqCst)
-            {
-                playback_manager
+fn queued_playback_thread(mut queue_rx: mpsc::Receiver<PlaybackCommand>) {
+    thread::spawn(move || {
+        let rt = Runtime::new().unwrap();
+        rt.block_on(async {
+            let mut audio_manager = PlaybackManager::new();
+            while let Some(command) = queue_rx.recv().await {
+                audio_manager.command_queue.push_back(command);
+                if audio_manager
                     .is_idle
-                    .store(false, std::sync::atomic::Ordering::SeqCst);
-                playback_manager.start_processing_commands().await;
-                playback_manager
-                    .is_idle
-                    .store(true, std::sync::atomic::Ordering::SeqCst);
+                    .load(std::sync::atomic::Ordering::SeqCst)
+                {
+                    audio_manager
+                        .is_idle
+                        .store(false, std::sync::atomic::Ordering::SeqCst);
+                    audio_manager.start_processing_commands().await;
+                    audio_manager
+                        .is_idle
+                        .store(true, std::sync::atomic::Ordering::SeqCst);
+                }
             }
-        }
+        });
     });
 }
