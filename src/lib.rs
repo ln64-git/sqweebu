@@ -99,12 +99,11 @@ impl AudioRecordingManager {
 // region: --- Playback Manager
 
 type SinkId = usize;
-
 pub enum PlaybackCommand {
-    Play(Vec<u8>),  // Play audio data
-    Stop(SinkId),   // Stop a specific audio sink
-    Pause(SinkId),  // Pause a specific audio sink
-    Resume(SinkId), // Resume a specific audio sink
+    Play(Vec<u8>),
+    Pause,
+    Stop,
+    Resume,
 }
 
 pub struct PlaybackManager {
@@ -113,6 +112,7 @@ pub struct PlaybackManager {
     pub streams: HashMap<SinkId, OutputStream>,
     pub command_queue: VecDeque<PlaybackCommand>,
     pub is_idle: AtomicBool,
+    pub current_sink: Option<SinkId>, // New field to track the current playing audio
 }
 
 impl PlaybackManager {
@@ -123,6 +123,7 @@ impl PlaybackManager {
             streams: HashMap::new(),
             command_queue: VecDeque::new(),
             is_idle: AtomicBool::new(true),
+            current_sink: None,
         }
     }
 
@@ -137,57 +138,51 @@ impl PlaybackManager {
     pub async fn handle_command(&mut self, command: PlaybackCommand) -> Result<(), Box<dyn Error>> {
         match command {
             PlaybackCommand::Play(audio_data) => {
+                println!("Playing audio");
                 self.play_audio(audio_data).await?;
             }
-            PlaybackCommand::Stop(id) => {
-                self.stop_audio(id);
+            PlaybackCommand::Pause => {
+                if let Some(id) = self.current_sink {
+                    if let Some(sink) = self.sinks.get(&id) {
+                        sink.pause();
+                    }
+                }
             }
-            PlaybackCommand::Pause(id) => {
-                self.pause_audio(id);
+            PlaybackCommand::Stop => {
+                if let Some(id) = self.current_sink.take() {
+                    // Remove the current sink from tracking
+                    if let Some(sink) = self.sinks.get(&id) {
+                        sink.stop(); // Stop the current sink
+                    }
+                }
             }
-            PlaybackCommand::Resume(id) => {
-                self.resume_audio(id);
+            PlaybackCommand::Resume => {
+                if let Some(id) = self.current_sink {
+                    if let Some(sink) = self.sinks.get(&id) {
+                        sink.play(); // Resume the current sink
+                    }
+                }
             }
         }
         Ok(())
     }
 
     pub async fn play_audio(&mut self, audio_data: Vec<u8>) -> Result<SinkId, Box<dyn Error>> {
-        // Attempt to create an OutputStream and a Sink for playing audio
         let (stream, stream_handle) = OutputStream::try_default()?;
         let sink = Sink::try_new(&stream_handle)?;
         let source = Decoder::new(Cursor::new(audio_data))?;
-        sink.append(source);
-        while !sink.empty() {
-            tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
-        }
 
-        // Assign an ID to this audio stream for management
+        sink.append(source);
+
+        // Assume playback starts immediately without blocking
         let id = self.next_id;
         self.sinks.insert(id, sink);
-        self.streams.insert(id, stream); // Keep the OutputStream alive
+        self.streams.insert(id, stream);
+        self.current_sink = Some(id); // Set current sink ID here
         self.next_id += 1;
+
+        println!("Audio playing on sink ID: {}", id);
+
         Ok(id)
     }
-
-    pub fn stop_audio(&mut self, id: SinkId) {
-        if let Some(sink) = self.sinks.remove(&id) {
-            sink.stop();
-        }
-        self.streams.remove(&id); // Also remove the OutputStream to not keep it alive unnecessarily
-    }
-
-    pub fn pause_audio(&mut self, id: SinkId) {
-        if let Some(sink) = self.sinks.get_mut(&id) {
-            sink.pause();
-        }
-    }
-
-    pub fn resume_audio(&mut self, id: SinkId) {
-        if let Some(sink) = self.sinks.get_mut(&id) {
-            sink.play();
-        }
-    }
 }
-
-// endregion: --- Playback Manager

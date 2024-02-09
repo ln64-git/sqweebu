@@ -9,16 +9,13 @@ pub async fn init_playback_channel() -> Sender<PlaybackCommand> {
     let (playback_tx, playback_rx) = mpsc::channel::<PlaybackCommand>(32);
     let (queue_tx, queue_rx) = mpsc::channel::<PlaybackCommand>(32);
 
-    // Correctly spawn the Playback Control Thread as it is async
     tokio::spawn(playback_control_thread(playback_rx, queue_tx.clone()));
 
-    // Directly call queued_playback_thread without tokio::spawn
     queued_playback_thread(queue_rx);
 
     playback_tx
 }
 
-// Playback Control Thread
 async fn playback_control_thread(
     mut rx: mpsc::Receiver<PlaybackCommand>,
     queue_tx: mpsc::Sender<PlaybackCommand>,
