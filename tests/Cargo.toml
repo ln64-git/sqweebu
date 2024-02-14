@@ -1,0 +1,12 @@
+[package]
+name = "tests"
+version = "0.1.0"
+edition = "2018"
+
+[[test]]
+name = "unit"
+path = "src/unit.rs"
+
+[[test]]
+name = "integration"
+path = "src/integration.rs"

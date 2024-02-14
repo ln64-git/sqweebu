@@ -28,13 +28,18 @@ pub async fn speak_ollama(
     prompt: String,
     playback_tx: Sender<PlaybackCommand>,
 ) -> Result<(), Box<dyn Error>> {
-    let (sentence_tx, mut sentence_rx) = mpsc::channel::<String>(32);
+    let (sentence_send, mut sentence_recv) = mpsc::channel::<String>(32);
     tokio::spawn(async move {
-        if let Err(e) = ollama_generate_api(prompt.clone(), sentence_tx).await {
+        if let Err(e) = ollama_generate_api(prompt.clone(), sentence_send).await {
             eprintln!("Failed to generate sentences: {}", e);
         }
     });
-    while let Some(sentence) = sentence_rx.recv().await {
+
+    while let Some(sentence) = sentence_recv.recv().await {
+        println!("---------------------------------------");
+        println!("SPEAK_OLLAMA - Sentence Retrieved: ");
+        println!("{}", sentence);
+        println!("---------------------------------------");
         // send a command to play the audio.
         if let Err(e) = speak_text(&sentence, playback_tx.clone()).await {
             eprintln!("Error processing sentence to audio: {}", e);

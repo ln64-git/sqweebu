@@ -1,36 +1,8 @@
-[package]
-name = "response_engine"
-version = "0.1.0"
-edition = "2021"
+[workspace]
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+members = [
+    "core",
+    "http_server",
+    "tests"
+]
 
-[dependencies]
-actix-web = "4.4.1"
-anyhow = "1.0.79"
-async-recursion = "1.0.5"
-bytes = "1.5.0"
-chrono = "0.4.33"
-cpal = "0.15.2"
-dotenv = "0.15.0"
-futures = "0.3.30"
-hound = "3.5.1"
-mockito = "1.2.0"
-ollama-rs = { version = "0.1.6", features = ["stream"] }
-regex = "1.10.3"
-reqwest = { version = "0.11.23", features = ["json"] }
-rodio = "0.17.3"
-serde = { version = "1.0.196", features = ["derive"] }
-serde_json = "1.0.113"
-tempfile = "3.9.0"
-tokio = { version = "1.35.1", features = ["full"] }
-tokio-stream = "0.1.14"
-vosk = "0.2.0"
-
-
-
-[lints.rust]
-# unused = "allow"
-
-[lib]
-path = "src/lib.rs"

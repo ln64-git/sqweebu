@@ -1,0 +1,12 @@
+[package]
+name = "http_server"
+version = "0.1.0"
+edition = "2018"
+
+[dependencies]
+core = { path = "../core" }
+
+actix-web = "4.5.1"
+env_logger = "0.11.2"
+tokio = { version = "1.36.0", features = ["full"] }
+# Add dependencies here if needed

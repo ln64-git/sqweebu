@@ -1,6 +1,5 @@
 // src/_utils/azure.rs
 
-use crate::PlaybackCommand;
 use reqwest::Response;
 use std::env;
 use std::error::Error;
@@ -9,17 +8,18 @@ use tokio::sync::mpsc;
 use dotenv::dotenv;
 use reqwest::Error as ReqwestError;
 
+use crate::PlaybackCommand;
+
 pub async fn speak_text(
     text: &str,
-    playback_tx: mpsc::Sender<PlaybackCommand>,
+    playback_send: mpsc::Sender<PlaybackCommand>,
 ) -> Result<(), Box<dyn Error>> {
     let azure_response = get_azure_response(text).await?;
     let audio_data = azure_response_to_audio(azure_response).await?;
-    // Instead of sending audio data directly, wrap it in a PlaybackCommand::Play
-    playback_tx
+    playback_send
         .send(PlaybackCommand::Play(audio_data))
         .await
-        .map_err(|e| e.into()) // Convert send error
+        .map_err(|e| e.into())
 }
 
 pub async fn azure_response_to_audio(response: Response) -> Result<Vec<u8>, Box<dyn Error>> {
