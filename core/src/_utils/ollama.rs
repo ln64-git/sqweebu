@@ -1,7 +1,7 @@
 // src/_utils/ollama.rs
 
-use crate::AppState;
 // region: --- Modules
+use crate::AppState;
 use crate::PlaybackCommand;
 use crate::_utils::azure::speak_text;
 use reqwest;
@@ -17,6 +17,7 @@ use tokio::sync::Mutex;
 use tokio_stream::StreamExt;
 // endregion: --- Modules
 
+// region: --- Structs
 #[derive(Deserialize, Serialize)] // Make sure to derive Deserialize
 struct GenerateRequest {
     model: String,
@@ -29,6 +30,7 @@ struct OllamaFragment {
     response: String,
     done: bool,
 }
+// endregion: --- Structs
 
 pub async fn speak_ollama(
     prompt: String,
@@ -50,16 +52,12 @@ pub async fn speak_ollama(
         sentence_array.push(sentence.clone());
 
         let _ = speak_text(&sentence, nexus.lock().await.playback_send.clone()).await;
-
         println!("sentence: {:#?}", sentence);
     }
 
-    // Receive completion signal from ollama_generate_api
     if let Some(_) = ollama_complete_recv.recv().await {
-        // Process completion
         Ok(())
     } else {
-        // Handle error if completion signal is not received
         Err("Completion signal not received".into())
     }
 }
@@ -134,19 +132,3 @@ async fn detect_punctuation(fragment: OllamaFragment) -> bool {
     }
     return false;
 }
-
-// Collect sentences in an array here
-// Keep track of sink completion state
-// if sink_completed == true
-// let _ = speak_text(&sentence, playback_send.clone()).await
-
-// while let Some(sentence) = sentence_recv.recv().await {
-//     println!("---------------------------------------");
-//     println!("SPEAK_OLLAMA - Sentence Retrieved: ");
-//     println!("{}", sentence);
-//     println!("---------------------------------------");
-//     // send a command to play the audio.
-//     if let Err(e) = speak_text(&sentence, playback_send.clone()).await {
-//         eprintln!("Error processing sentence to audio: {}", e);
-//     }
-// }
