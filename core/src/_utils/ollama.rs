@@ -34,22 +34,20 @@ pub async fn speak_ollama(
     let (sentence_send, mut sentence_recv) = mpsc::channel::<String>(32);
     let (ollama_complete_send, mut ollama_complete_recv) = mpsc::channel::<bool>(32);
 
-    // Spawn async task to generate sentences
     tokio::spawn(async move {
-        if let Err(e) =
-            ollama_generate_api(prompt.clone(), sentence_send, ollama_complete_send).await
-        {
-            eprintln!("Failed to generate sentences: {}", e);
+        match ollama_generate_api(prompt.clone(), sentence_send, ollama_complete_send).await {
+            Ok(_) => {}
+            Err(e) => eprintln!("Failed to generate sentences: {}", e),
         }
     });
 
     let mut sentence_array: Vec<String> = Vec::new();
 
-    // Receive sentences and populate the sentence_array
+    let mut sentence_memory = String::new();
     while let Some(sentence) = sentence_recv.recv().await {
-        println!("sentence retreived: {:#?}", sentence);
+        sentence_array.push(sentence.clone());
 
-        sentence_array.push(sentence);
+        println!("sentence: {:#?}", sentence);
     }
 
     // Receive completion signal from ollama_generate_api
