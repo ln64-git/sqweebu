@@ -21,14 +21,9 @@ async fn main() {
 
     let nexus_lock = Arc::new(Mutex::new(nexus));
 
-    let playback_sender_clone = {
-        let state = nexus_lock.lock().await;
-        state.playback_send.clone()
-    };
-
     if let Err(e) = speak_ollama(
         "list three things about yourself.".to_owned(),
-        playback_sender_clone,
+        nexus_lock.clone(),
     )
     .await
     {

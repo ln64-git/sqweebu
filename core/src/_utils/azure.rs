@@ -17,7 +17,7 @@ pub async fn speak_text(
     let azure_response = get_azure_response(text).await?;
     let audio_data = azure_response_to_audio(azure_response).await?;
     playback_send
-        .send(PlaybackCommand::QueueSentenceForPlayback(audio_data))
+        .send(PlaybackCommand::QueuePlayback(audio_data))
         .await
         .map_err(|e| e.into())
 }

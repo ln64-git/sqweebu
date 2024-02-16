@@ -6,14 +6,14 @@ use tokio::sync::mpsc::{self, Sender};
 use crate::{PlaybackCommand, PlaybackManager};
 
 pub async fn init_playback_channel() -> Sender<PlaybackCommand> {
-    let (playback_tx, playback_rx) = mpsc::channel::<PlaybackCommand>(32);
-    let (queue_tx, queue_rx) = mpsc::channel::<PlaybackCommand>(32);
+    let (playback_send, playback_recv) = mpsc::channel::<PlaybackCommand>(32);
+    let (queue_send, queue_recv) = mpsc::channel::<PlaybackCommand>(32);
 
-    tokio::spawn(playback_control_thread(playback_rx, queue_tx.clone()));
+    tokio::spawn(playback_control_thread(playback_recv, queue_send.clone()));
 
-    queued_playback_thread(queue_rx);
+    queued_playback_thread(queue_recv);
 
-    playback_tx
+    playback_send
 }
 
 async fn playback_control_thread(

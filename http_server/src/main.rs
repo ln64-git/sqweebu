@@ -4,7 +4,6 @@ use core::{
     AppState,
     _utils::{
         counter::{start_counter, stop_counter},
-        ollama::speak_ollama,
         playback,
     },
 };
@@ -16,18 +15,18 @@ fn register_endpoints(cfg: &mut web::ServiceConfig) {
     cfg.route("/start", web::get().to(start_counter))
         .route("/stop", web::get().to(stop_counter));
 }
-
-pub async fn test_endpoint(nexus: web::Data<Arc<Mutex<AppState>>>) -> impl Responder {
+// nexus: web::Data<Arc<Mutex<AppState>>>
+pub async fn test_endpoint() -> impl Responder {
     // let _ = start_counter(nexus.clone()).await;
     // let _ = speak_text("Hello World!", state.playback_send.clone()).await;
 
-    let state = nexus.lock().await;
+    // let state = nexus.lock().await;
 
-    let _ = speak_ollama(
-        "What does the name Luke represent?".to_owned(),
-        state.playback_send.clone(),
-    )
-    .await;
+    // let _ = speak_ollama(
+    //     "What does the name Luke represent?".to_owned(),
+    //     state.playback_send.clone(),
+    // )
+    // .await;
 
     HttpResponse::Ok().body("Test Complete.")
 }

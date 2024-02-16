@@ -1,5 +1,6 @@
 // src/_utils/ollama.rs
 
+use crate::AppState;
 // region: --- Modules
 use crate::PlaybackCommand;
 use crate::_utils::azure::speak_text;
@@ -9,8 +10,10 @@ use sentence::Token;
 use serde::{Deserialize, Serialize};
 use serde_json;
 use std::error::Error;
+use std::sync::Arc;
 use tokio::sync::mpsc;
 use tokio::sync::mpsc::Sender;
+use tokio::sync::Mutex;
 use tokio_stream::StreamExt;
 // endregion: --- Modules
 
@@ -29,7 +32,7 @@ struct OllamaFragment {
 
 pub async fn speak_ollama(
     prompt: String,
-    playback_send: Sender<PlaybackCommand>,
+    nexus: Arc<Mutex<AppState>>,
 ) -> Result<(), Box<dyn Error>> {
     let (sentence_send, mut sentence_recv) = mpsc::channel::<String>(32);
     let (ollama_complete_send, mut ollama_complete_recv) = mpsc::channel::<bool>(32);
@@ -43,9 +46,10 @@ pub async fn speak_ollama(
 
     let mut sentence_array: Vec<String> = Vec::new();
 
-    let mut sentence_memory = String::new();
     while let Some(sentence) = sentence_recv.recv().await {
         sentence_array.push(sentence.clone());
+
+        let _ = speak_text(&sentence, nexus.lock().await.playback_send.clone()).await;
 
         println!("sentence: {:#?}", sentence);
     }
