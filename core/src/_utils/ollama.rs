@@ -47,6 +47,8 @@ pub async fn speak_ollama(
 
     // Receive sentences and populate the sentence_array
     while let Some(sentence) = sentence_recv.recv().await {
+        println!("sentence retreived: {:#?}", sentence);
+
         sentence_array.push(sentence);
     }
 
@@ -62,7 +64,7 @@ pub async fn speak_ollama(
 
 pub async fn ollama_generate_api(
     final_prompt: String,
-    inner_send: mpsc::Sender<String>,
+    sentence_send: mpsc::Sender<String>,
     ollama_complete_send: mpsc::Sender<bool>,
 ) -> Result<(), Box<dyn Error>> {
     let client = reqwest::Client::new();
@@ -85,24 +87,15 @@ pub async fn ollama_generate_api(
     while let Some(chunk) = response_stream.next().await {
         let chunk = chunk?;
         let chunk_text = String::from_utf8_lossy(&chunk);
-        let (sentence_send, sentence_recv) = mpsc::channel::<String>(32);
 
         for line in chunk_text.split('\n').filter(|s| !s.is_empty()) {
             match serde_json::from_str::<OllamaFragment>(line) {
                 Ok(fragment) => {
-                    let response = fragment.response; // Trim any leading or trailing whitespace
-                                                      // Check if the response is empty after trimming
-                    if !response.is_empty() {
-                        sentence.push_str(&response);
-                        // Check if the sentence ends with a punctuation mark
-                        if response.ends_with('.')
-                            || response.ends_with('!')
-                            || response.ends_with('?')
-                        {
-                            let final_sentence = parse_sentence(&sentence).await;
-                            // Send final_sentence to appropriate processing function
-                            sentence.clear(); // Clear sentence after processing
-                        }
+                    sentence.push_str(&fragment.response);
+                    if detect_punctuation(fragment).await {
+                        let final_sentence = parse_sentence(&sentence).await;
+                        sentence_send.send(final_sentence).await; // await here
+                        sentence.clear();
                     }
                 }
                 Err(e) => {
@@ -111,22 +104,19 @@ pub async fn ollama_generate_api(
             }
         }
     }
-
-    if stream_ended {
-        let _ = ollama_complete_send.send(true).await;
-    }
+    // Set stream_ended to true when the response stream ends
+    stream_ended = true;
+    // Send completion signal
+    let _ = ollama_complete_send.send(true).await; // await here
     Ok(())
 }
 
 async fn parse_sentence(sentence: &String) -> String {
-    // Check if the sentence starts with a newline character and remove it
     let cleaned_sentence = if sentence.starts_with('\n') {
         sentence.chars().skip(1).collect()
     } else {
         sentence.clone()
     };
-
-    println!("sentence: {:#?}", cleaned_sentence);
     cleaned_sentence
 }
 

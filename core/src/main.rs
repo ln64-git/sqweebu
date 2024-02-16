@@ -27,7 +27,7 @@ async fn main() {
     };
 
     if let Err(e) = speak_ollama(
-        "In three sentences, Tell me about what you enjoy.".to_owned(),
+        "list three things about yourself.".to_owned(),
         playback_sender_clone,
     )
     .await
