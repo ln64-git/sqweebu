@@ -22,35 +22,48 @@ struct GenerateRequest {
 #[derive(Deserialize)]
 struct PartialGenerateResponse {
     response: String,
+    done: bool,
 }
 
 pub async fn speak_ollama(
     prompt: String,
-    playback_tx: Sender<PlaybackCommand>,
+    playback_send: Sender<PlaybackCommand>,
 ) -> Result<(), Box<dyn Error>> {
     let (sentence_send, mut sentence_recv) = mpsc::channel::<String>(32);
+    let (ollama_complete_send, mut ollama_complete_recv) = mpsc::channel::<bool>(32);
+
+    // Spawn async task to generate sentences
     tokio::spawn(async move {
-        if let Err(e) = ollama_generate_api(prompt.clone(), sentence_send).await {
+        if let Err(e) =
+            ollama_generate_api(prompt.clone(), sentence_send, ollama_complete_send).await
+        {
             eprintln!("Failed to generate sentences: {}", e);
         }
     });
 
+    let mut sentence_array: Vec<String> = Vec::new();
+
+    // Receive sentences and populate the sentence_array
     while let Some(sentence) = sentence_recv.recv().await {
-        println!("---------------------------------------");
-        println!("SPEAK_OLLAMA - Sentence Retrieved: ");
-        println!("{}", sentence);
-        println!("---------------------------------------");
-        // send a command to play the audio.
-        if let Err(e) = speak_text(&sentence, playback_tx.clone()).await {
-            eprintln!("Error processing sentence to audio: {}", e);
-        }
+        sentence_array.push(sentence);
     }
-    Ok(())
+
+    println!("sentence_queue: {:#?}", sentence_array);
+
+    // Receive completion signal from ollama_generate_api
+    if let Some(_) = ollama_complete_recv.recv().await {
+        // Process completion
+        Ok(())
+    } else {
+        // Handle error if completion signal is not received
+        Err("Completion signal not received".into())
+    }
 }
 
 pub async fn ollama_generate_api(
     final_prompt: String,
-    inner_tx: mpsc::Sender<String>,
+    inner_send: mpsc::Sender<String>,
+    ollama_complete_send: mpsc::Sender<bool>,
 ) -> Result<(), Box<dyn Error>> {
     let client = reqwest::Client::new();
     let request_body = GenerateRequest {
@@ -67,6 +80,7 @@ pub async fn ollama_generate_api(
         .bytes_stream();
 
     let mut accumulated_response = String::new();
+    let mut stream_ended = false; // Flag to track if response stream has ended
 
     while let Some(chunk) = response_stream.next().await {
         let chunk = chunk?;
@@ -76,8 +90,11 @@ pub async fn ollama_generate_api(
             match serde_json::from_str::<PartialGenerateResponse>(line) {
                 Ok(partial_response) => {
                     accumulated_response.push_str(&partial_response.response);
+                    if partial_response.done {
+                        stream_ended = true;
+                    }
                     if accumulated_response.ends_with(['.', '?', '!']) {
-                        inner_tx.send(accumulated_response.clone()).await?;
+                        inner_send.send(accumulated_response.clone()).await?;
                         accumulated_response.clear();
                     }
                 }
@@ -86,9 +103,38 @@ pub async fn ollama_generate_api(
                 }
             }
         }
+
+        // Check if the stream has ended
+        if stream_ended {
+            break; // Exit the loop as the stream has ended
+        }
     }
+
+    // Send the remaining accumulated response
     if !accumulated_response.is_empty() {
-        inner_tx.send(accumulated_response).await?;
+        inner_send.send(accumulated_response).await?;
     }
+
+    // Send completion signal if the stream has ended
+    if stream_ended {
+        let _ = ollama_complete_send.send(true).await;
+    }
+
     Ok(())
 }
+
+// Collect sentences in an array here
+// Keep track of sink completion state
+// if sink_completed == true
+// let _ = speak_text(&sentence, playback_send.clone()).await
+
+// while let Some(sentence) = sentence_recv.recv().await {
+//     println!("---------------------------------------");
+//     println!("SPEAK_OLLAMA - Sentence Retrieved: ");
+//     println!("{}", sentence);
+//     println!("---------------------------------------");
+//     // send a command to play the audio.
+//     if let Err(e) = speak_text(&sentence, playback_send.clone()).await {
+//         eprintln!("Error processing sentence to audio: {}", e);
+//     }
+// }

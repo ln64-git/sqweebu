@@ -26,11 +26,14 @@ async fn main() {
         state.playback_send.clone()
     };
 
-    let _ = speak_ollama(
-        "What does the name Luke represent?".to_owned(),
+    if let Err(e) = speak_ollama(
+        "In three sentences, Tell me about what you enjoy.".to_owned(),
         playback_sender_clone,
     )
-    .await;
+    .await
+    {
+        eprintln!("Error in speak_ollama: {}", e);
+    }
 
     println!("MAIN - Running main");
 }
