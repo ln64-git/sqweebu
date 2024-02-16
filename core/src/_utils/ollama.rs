@@ -4,6 +4,8 @@
 use crate::PlaybackCommand;
 use crate::_utils::azure::speak_text;
 use reqwest;
+use sentence::SentenceTokenizer;
+use sentence::Token;
 use serde::{Deserialize, Serialize};
 use serde_json;
 use std::error::Error;
@@ -20,7 +22,7 @@ struct GenerateRequest {
 }
 
 #[derive(Deserialize)]
-struct PartialGenerateResponse {
+struct OllamaFragment {
     response: String,
     done: bool,
 }
@@ -47,8 +49,6 @@ pub async fn speak_ollama(
     while let Some(sentence) = sentence_recv.recv().await {
         sentence_array.push(sentence);
     }
-
-    println!("sentence_queue: {:#?}", sentence_array);
 
     // Receive completion signal from ollama_generate_api
     if let Some(_) = ollama_complete_recv.recv().await {
@@ -79,23 +79,30 @@ pub async fn ollama_generate_api(
         .await?
         .bytes_stream();
 
-    let mut accumulated_response = String::new();
     let mut stream_ended = false; // Flag to track if response stream has ended
+    let mut sentence = String::new();
 
     while let Some(chunk) = response_stream.next().await {
         let chunk = chunk?;
         let chunk_text = String::from_utf8_lossy(&chunk);
+        let (sentence_send, sentence_recv) = mpsc::channel::<String>(32);
 
         for line in chunk_text.split('\n').filter(|s| !s.is_empty()) {
-            match serde_json::from_str::<PartialGenerateResponse>(line) {
-                Ok(partial_response) => {
-                    accumulated_response.push_str(&partial_response.response);
-                    if partial_response.done {
-                        stream_ended = true;
-                    }
-                    if accumulated_response.ends_with(['.', '?', '!']) {
-                        inner_send.send(accumulated_response.clone()).await?;
-                        accumulated_response.clear();
+            match serde_json::from_str::<OllamaFragment>(line) {
+                Ok(fragment) => {
+                    let response = fragment.response; // Trim any leading or trailing whitespace
+                                                      // Check if the response is empty after trimming
+                    if !response.is_empty() {
+                        sentence.push_str(&response);
+                        // Check if the sentence ends with a punctuation mark
+                        if response.ends_with('.')
+                            || response.ends_with('!')
+                            || response.ends_with('?')
+                        {
+                            let final_sentence = parse_sentence(&sentence).await;
+                            // Send final_sentence to appropriate processing function
+                            sentence.clear(); // Clear sentence after processing
+                        }
                     }
                 }
                 Err(e) => {
@@ -103,24 +110,37 @@ pub async fn ollama_generate_api(
                 }
             }
         }
-
-        // Check if the stream has ended
-        if stream_ended {
-            break; // Exit the loop as the stream has ended
-        }
     }
 
-    // Send the remaining accumulated response
-    if !accumulated_response.is_empty() {
-        inner_send.send(accumulated_response).await?;
-    }
-
-    // Send completion signal if the stream has ended
     if stream_ended {
         let _ = ollama_complete_send.send(true).await;
     }
-
     Ok(())
+}
+
+async fn parse_sentence(sentence: &String) -> String {
+    // Check if the sentence starts with a newline character and remove it
+    let cleaned_sentence = if sentence.starts_with('\n') {
+        sentence.chars().skip(1).collect()
+    } else {
+        sentence.clone()
+    };
+
+    println!("sentence: {:#?}", cleaned_sentence);
+    cleaned_sentence
+}
+
+async fn detect_punctuation(fragment: OllamaFragment) -> bool {
+    let text_fragment = fragment.response;
+    let tokenizer = SentenceTokenizer::new();
+    let tokens = tokenizer.tokenize(text_fragment.as_str());
+    for token in tokens {
+        match token {
+            Token::Punctuation(punctuation) => return true,
+            _ => {}
+        }
+    }
+    return false;
 }
 
 // Collect sentences in an array here
