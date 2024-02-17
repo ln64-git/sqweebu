@@ -32,7 +32,7 @@ async fn main() -> std::io::Result<()> {
     let nexus = Arc::new(Mutex::new(AppState {
         running: None,
         playback_send: playback::init_playback_channel().await,
-        sentence_map: HashMap::new(),
+        sentence_map: Arc::new(Mutex::new(HashMap::new())),
     }));
 
     HttpServer::new(move || {

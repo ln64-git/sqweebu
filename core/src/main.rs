@@ -22,15 +22,11 @@ async fn main() {
     let nexus = AppState {
         running: None,
         playback_send: playback::init_playback_channel().await,
-        sentence_map: HashMap::new(),
+        sentence_map: Arc::new(Mutex::new(HashMap::new())), // Wrap HashMap in Arc<Mutex<>>
     };
 
     let nexus_lock = Arc::new(Mutex::new(nexus));
     let nexus_lock_clone = Arc::clone(&nexus_lock);
-
-    ollama_playback_queue(nexus_lock_clone)
-        .await
-        .expect("Error in ollama_playback_queue");
 
     speak_ollama(
         "list three things about yourself.".to_owned(),
@@ -38,6 +34,13 @@ async fn main() {
     )
     .await
     .unwrap_or_else(|e| eprintln!("Error in speak_ollama: {}", e));
+
+    // Call ollama_playback_queue here after speak_ollama completes
+    ollama_playback_queue(nexus_lock_clone)
+        .await
+        .unwrap_or_else(|e| {
+            eprintln!("Error in ollama_playback_queue: {}", e);
+        });
 
     let end_time = Utc::now(); // Record end time
     let duration = end_time.signed_duration_since(start_time); // Calculate duration

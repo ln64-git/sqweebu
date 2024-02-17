@@ -24,7 +24,7 @@ use tokio::sync::Mutex;
 pub struct AppState {
     pub running: Option<mpsc::Sender<()>>,
     pub playback_send: Sender<PlaybackCommand>,
-    pub sentence_map: HashMap<usize, String>,
+    pub sentence_map: Arc<Mutex<HashMap<usize, String>>>, // Wrap HashMap in Arc<Mutex<>>
 }
 
 impl Clone for AppState {
@@ -32,7 +32,7 @@ impl Clone for AppState {
         AppState {
             running: self.running.as_ref().map(|sender| sender.clone()),
             playback_send: self.playback_send.clone(),
-            sentence_map: HashMap::new(),
+            sentence_map: Arc::clone(&self.sentence_map), // Clone the Arc
         }
     }
 }
@@ -71,16 +71,17 @@ impl PlaybackManager {
     pub async fn handle_command(&mut self, command: PlaybackCommand) -> Result<(), Box<dyn Error>> {
         match command {
             PlaybackCommand::QueuePlayback(nexus) => {
+                // Lock the mutex to access the AppState
                 let state = nexus.lock().await;
 
                 // Check if there are sentences in the queue
-                if !state.sentence_map.is_empty() {
+                if !state.sentence_map.lock().await.is_empty() {
                     // Create a new sink for each playback
                     let (stream, stream_handle) = OutputStream::try_default()?;
                     let sink = Sink::try_new(&stream_handle)?;
 
                     // Iterate over references to sentences
-                    for (_, sentence) in &state.sentence_map {
+                    for (_, sentence) in state.sentence_map.lock().await.iter() {
                         let audio_data = speak_text(sentence).await?;
                         let source = Decoder::new(Cursor::new(audio_data))?;
                         sink.append(source);
@@ -95,7 +96,6 @@ impl PlaybackManager {
                     self.current_sink = Some(sink);
                 }
             }
-
             PlaybackCommand::Pause => {
                 println!("Pausing audio playback");
                 if let Some(sink) = &mut self.current_sink {
