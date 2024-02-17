@@ -4,12 +4,12 @@
 use crate::AppState;
 use crate::PlaybackCommand;
 use crate::_utils::azure::speak_text;
-use crate::_utils::playback::ollama_playback_queue;
 use reqwest;
 use sentence::SentenceTokenizer;
 use sentence::Token;
 use serde::{Deserialize, Serialize};
 use serde_json;
+use std::collections::HashMap;
 use std::error::Error;
 use std::sync::Arc;
 use tokio::sync::mpsc;
@@ -39,6 +39,7 @@ pub async fn speak_ollama(
 ) -> Result<(), Box<dyn Error>> {
     let (sentence_send, mut sentence_recv) = mpsc::channel::<String>(32);
 
+    // Spawn a task to generate sentences and send them to the channel
     tokio::spawn(async move {
         match ollama_generate_api(prompt.clone(), sentence_send).await {
             Ok(_) => {}
@@ -46,23 +47,17 @@ pub async fn speak_ollama(
         }
     });
 
+    // Spawn a task to process sentences and speak them
+    let mut index = 1;
+    let mut nexus_lock = nexus.lock().await;
+    let sentence_map = &mut nexus_lock.sentence_map;
+
     while let Some(sentence) = sentence_recv.recv().await {
-        println!("SEND - SPEAK_OLLAMA - sentence: {:#?}", sentence);
-
-        let mut nexus_lock = nexus.lock().await;
-        let mut sentence_queue = &mut nexus_lock.sentence_queue; // Borrowing instead of moving
-
-        sentence_queue.push(sentence.clone());
-
-        // Clone the nexus Arc for use in the async block
-        let nexus_clone = Arc::clone(&nexus);
-
-        tokio::spawn(async move {
-            if let Err(err) = ollama_playback_queue(nexus_clone).await {
-                eprintln!("Error running ollama_playback_queue: {}", err);
-            }
-        });
+        println!("PART 2 - sentence added: {:#?}", index);
+        sentence_map.insert(index, sentence.clone());
+        index += 1;
     }
+
     Ok(())
 }
 
@@ -97,6 +92,7 @@ pub async fn ollama_generate_api(
                     sentence.push_str(&fragment.response);
                     if detect_punctuation(fragment).await {
                         let final_sentence = parse_sentence(&sentence).await;
+                        println!("PART 1 - Sending sentence... ");
                         sentence_send.send(final_sentence).await; // await here
                         sentence.clear();
                     }
@@ -133,3 +129,11 @@ async fn detect_punctuation(fragment: OllamaFragment) -> bool {
     }
     return false;
 }
+
+// while let Some(sentence) = sentence_recv.recv().await {
+//     tokio::spawn(async move {
+//         if let Err(err) = ollama_playback_queue(sentence).await {
+//             eprintln!("Error running ollama_playback_queue: {}", err);
+//         }
+//     });
+// }

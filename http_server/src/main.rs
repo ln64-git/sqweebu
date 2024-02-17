@@ -1,7 +1,7 @@
 // region: --- imports
 use actix_web::{web, App, HttpResponse, HttpServer, Responder};
 use core::{AppState, _utils::playback};
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
 use tokio::sync::Mutex;
 // endregion: --- imports
 
@@ -32,7 +32,7 @@ async fn main() -> std::io::Result<()> {
     let nexus = Arc::new(Mutex::new(AppState {
         running: None,
         playback_send: playback::init_playback_channel().await,
-        sentence_queue: Vec::new(),
+        sentence_map: HashMap::new(),
     }));
 
     HttpServer::new(move || {

@@ -14,7 +14,6 @@ use std::collections::VecDeque;
 use std::error::Error;
 use std::io::Cursor;
 use std::sync::atomic::AtomicBool;
-use std::sync::atomic::Ordering;
 use std::sync::Arc;
 use tokio::sync::mpsc;
 use tokio::sync::mpsc::Sender;
@@ -25,7 +24,7 @@ use tokio::sync::Mutex;
 pub struct AppState {
     pub running: Option<mpsc::Sender<()>>,
     pub playback_send: Sender<PlaybackCommand>,
-    pub sentence_queue: Vec<String>,
+    pub sentence_map: HashMap<usize, String>,
 }
 
 impl Clone for AppState {
@@ -33,12 +32,10 @@ impl Clone for AppState {
         AppState {
             running: self.running.as_ref().map(|sender| sender.clone()),
             playback_send: self.playback_send.clone(),
-            sentence_queue: self.sentence_queue.clone(),
+            sentence_map: HashMap::new(),
         }
     }
 }
-
-type SinkId = usize;
 
 #[derive(Debug, Clone)]
 pub enum PlaybackCommand {
@@ -74,17 +71,17 @@ impl PlaybackManager {
     pub async fn handle_command(&mut self, command: PlaybackCommand) -> Result<(), Box<dyn Error>> {
         match command {
             PlaybackCommand::QueuePlayback(nexus) => {
-                let mut state = nexus.lock().await;
+                let state = nexus.lock().await;
 
                 // Check if there are sentences in the queue
-                if !state.sentence_queue.is_empty() {
+                if !state.sentence_map.is_empty() {
                     // Create a new sink for each playback
                     let (stream, stream_handle) = OutputStream::try_default()?;
                     let sink = Sink::try_new(&stream_handle)?;
 
                     // Iterate over references to sentences
-                    for sentence in &state.sentence_queue {
-                        let audio_data = speak_text(sentence.as_str()).await?;
+                    for (_, sentence) in &state.sentence_map {
+                        let audio_data = speak_text(sentence).await?;
                         let source = Decoder::new(Cursor::new(audio_data))?;
                         sink.append(source);
                     }
