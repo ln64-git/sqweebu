@@ -22,7 +22,6 @@ use tokio::sync::Mutex;
 
 #[derive(Debug)]
 pub struct AppState {
-    pub running: Option<mpsc::Sender<()>>,
     pub playback_send: Sender<PlaybackCommand>,
     pub sentence_map: Arc<Mutex<HashMap<usize, String>>>, // Wrap HashMap in Arc<Mutex<>>
 }
@@ -30,7 +29,6 @@ pub struct AppState {
 impl Clone for AppState {
     fn clone(&self) -> Self {
         AppState {
-            running: self.running.as_ref().map(|sender| sender.clone()),
             playback_send: self.playback_send.clone(),
             sentence_map: Arc::clone(&self.sentence_map), // Clone the Arc
         }
@@ -39,10 +37,11 @@ impl Clone for AppState {
 
 #[derive(Debug, Clone)]
 pub enum PlaybackCommand {
-    QueuePlayback(Arc<Mutex<AppState>>),
+    Play(Vec<u8>),
     Pause,
     Stop,
     Resume,
+    GetLength,
 }
 
 pub struct PlaybackManager {
@@ -70,35 +69,18 @@ impl PlaybackManager {
 
     pub async fn handle_command(&mut self, command: PlaybackCommand) -> Result<(), Box<dyn Error>> {
         match command {
-            PlaybackCommand::QueuePlayback(nexus) => {
-                // Lock the mutex to access the AppState
-                let state = nexus.lock().await;
-
-                // Check if there are sentences in the queue
-                if !state.sentence_map.lock().await.is_empty() {
-                    // Create a new sink for each playback
-                    let (stream, stream_handle) = OutputStream::try_default()?;
-                    let sink = Sink::try_new(&stream_handle)?;
-
-                    // Iterate over references to sentences
-                    for (_, sentence) in state.sentence_map.lock().await.iter() {
-                        let audio_data = speak_text(sentence).await?;
-                        let source = Decoder::new(Cursor::new(audio_data))?;
-                        sink.append(source);
-                    }
-
-                    // Block until the audio playback is finished
-                    while !sink.empty() {
-                        tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
-                    }
-
-                    // Store the current sink
-                    self.current_sink = Some(sink);
-                }
+            PlaybackCommand::Play(audio_data) => {
+                let (stream, stream_handle) = OutputStream::try_default()?;
+                let sink = Sink::try_new(&stream_handle)?;
+                let source = Decoder::new(Cursor::new(audio_data))?;
+                sink.append(source);
+                sink.sleep_until_end();
+                self.current_sink = Some(sink);
             }
+
             PlaybackCommand::Pause => {
                 println!("Pausing audio playback");
-                if let Some(sink) = &mut self.current_sink {
+                if let Some(ref mut sink) = self.current_sink {
                     sink.pause(); // Pause the current sink
                 }
             }
@@ -108,8 +90,13 @@ impl PlaybackManager {
                 }
             }
             PlaybackCommand::Resume => {
-                if let Some(sink) = &self.current_sink {
+                if let Some(ref mut sink) = self.current_sink {
                     sink.play(); // Resume the current sink
+                }
+            }
+            PlaybackCommand::GetLength => {
+                if let Some(ref mut sink) = self.current_sink {
+                    sink.len(); // Return the current sink
                 }
             }
         }

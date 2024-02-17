@@ -20,7 +20,6 @@ async fn main() {
     env_logger::init();
 
     let nexus = AppState {
-        running: None,
         playback_send: playback::init_playback_channel().await,
         sentence_map: Arc::new(Mutex::new(HashMap::new())), // Wrap HashMap in Arc<Mutex<>>
     };
@@ -34,13 +33,13 @@ async fn main() {
     )
     .await
     .unwrap_or_else(|e| eprintln!("Error in speak_ollama: {}", e));
+    // let _ = speak_text(
+    //     "Hello?",
+    //     nexus_lock_clone.lock().await.playback_send.clone(),
+    // )
+    // .await;
 
-    // Call ollama_playback_queue here after speak_ollama completes
-    ollama_playback_queue(nexus_lock_clone)
-        .await
-        .unwrap_or_else(|e| {
-            eprintln!("Error in ollama_playback_queue: {}", e);
-        });
+    // speak_text("Hello?", nexus_lock).await;
 
     let end_time = Utc::now(); // Record end time
     let duration = end_time.signed_duration_since(start_time); // Calculate duration

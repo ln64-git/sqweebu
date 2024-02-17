@@ -40,9 +40,6 @@ pub async fn speak_ollama(
 ) -> Result<(), Box<dyn Error>> {
     let (sentence_send, mut sentence_recv) = mpsc::channel::<String>(32);
 
-    // Clone the Arc to be used inside the closure
-    let nexus_clone = Arc::clone(&nexus);
-
     // Spawn a task to generate sentences and send them to the channel
     tokio::spawn(async move {
         match ollama_generate_api(prompt.clone(), sentence_send).await {
@@ -51,27 +48,23 @@ pub async fn speak_ollama(
         }
     });
 
-    // Initialize index outside the loop
+    // Clone the Arc to be used inside the closure
+    let nexus_clone = Arc::clone(&nexus);
     let mut index = 1;
 
     // Spawn a task to process sentences and speak them
     while let Some(sentence) = sentence_recv.recv().await {
-        println!("PART 2 - sentence added: {:#?}", index);
+        // Lock the mutex to access the sentence_map
+        let mut nexus_lock = nexus_clone.lock().await;
+        // Obtain a mutable reference to the sentence_map inside the Mutex
+        let sentence_map = &mut nexus_lock.sentence_map;
+        // Insert the sentence into the sentence_map
+        sentence_map.lock().await.insert(index, sentence.clone());
+        // Release the mutex before calling ollama_playback_queue
+        drop(nexus_lock);
 
         // Clone the Arc to be used inside the closure
         let nexus_clone_inner = Arc::clone(&nexus_clone);
-
-        // Lock the mutex to access the sentence_map
-        let mut nexus_lock = nexus_clone.lock().await;
-
-        // Obtain a mutable reference to the sentence_map inside the Mutex
-        let sentence_map = &mut nexus_lock.sentence_map;
-
-        // Insert the sentence into the sentence_map
-        sentence_map.lock().await.insert(index, sentence.clone());
-
-        // Release the mutex before calling ollama_playback_queue
-        drop(nexus_lock);
 
         // Call ollama_playback_queue to process the current sentence
         ollama_playback_queue(nexus_clone_inner)
@@ -117,7 +110,6 @@ pub async fn ollama_generate_api(
                     sentence.push_str(&fragment.response);
                     if detect_punctuation(fragment).await {
                         let final_sentence = parse_sentence(&sentence).await;
-                        println!("PART 1 - Sending sentence... ");
                         sentence_send.send(final_sentence).await; // await here
                         sentence.clear();
                     }
