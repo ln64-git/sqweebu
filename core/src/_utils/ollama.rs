@@ -37,35 +37,28 @@ pub async fn speak_ollama(
     nexus: Arc<Mutex<AppState>>,
 ) -> Result<(), Box<dyn Error>> {
     let (sentence_send, mut sentence_recv) = mpsc::channel::<String>(32);
-    let (ollama_complete_send, mut ollama_complete_recv) = mpsc::channel::<bool>(32);
 
     tokio::spawn(async move {
-        match ollama_generate_api(prompt.clone(), sentence_send, ollama_complete_send).await {
+        match ollama_generate_api(prompt.clone(), sentence_send).await {
             Ok(_) => {}
             Err(e) => eprintln!("Failed to generate sentences: {}", e),
         }
     });
 
-    let mut sentence_array: Vec<String> = Vec::new();
-
     while let Some(sentence) = sentence_recv.recv().await {
-        sentence_array.push(sentence.clone());
-
-        let _ = speak_text(&sentence, nexus.lock().await.playback_send.clone()).await;
         println!("sentence: {:#?}", sentence);
-    }
 
-    if let Some(_) = ollama_complete_recv.recv().await {
-        Ok(())
-    } else {
-        Err("Completion signal not received".into())
+        let mut nexus_lock = nexus.lock().await;
+        let mut sentence_queue = &mut nexus_lock.sentence_queue; // Borrowing instead of moving
+
+        sentence_queue.push(sentence.clone());
     }
+    Ok(())
 }
 
 pub async fn ollama_generate_api(
     final_prompt: String,
     sentence_send: mpsc::Sender<String>,
-    ollama_complete_send: mpsc::Sender<bool>,
 ) -> Result<(), Box<dyn Error>> {
     let client = reqwest::Client::new();
     let request_body = GenerateRequest {
@@ -106,8 +99,6 @@ pub async fn ollama_generate_api(
     }
     // Set stream_ended to true when the response stream ends
     stream_ended = true;
-    // Send completion signal
-    let _ = ollama_complete_send.send(true).await; // await here
     Ok(())
 }
 

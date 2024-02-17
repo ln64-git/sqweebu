@@ -3,28 +3,24 @@
 use reqwest::Response;
 use std::env;
 use std::error::Error;
-use tokio::sync::mpsc;
+use std::sync::Arc;
+use tokio::sync::{mpsc, Mutex};
 
 use dotenv::dotenv;
 use reqwest::Error as ReqwestError;
 
-use crate::PlaybackCommand;
+use crate::{AppState, PlaybackCommand};
 
-pub async fn speak_text(
-    text: &str,
-    playback_send: mpsc::Sender<PlaybackCommand>,
-) -> Result<(), Box<dyn Error>> {
+pub async fn speak_text(text: &str) -> Result<Vec<u8>, Box<dyn Error>> {
     let azure_response = get_azure_response(text).await?;
     let audio_data = azure_response_to_audio(azure_response).await?;
-    playback_send
-        .send(PlaybackCommand::QueuePlayback(audio_data))
-        .await
-        .map_err(|e| e.into())
+    Ok(audio_data)
 }
 
 pub async fn azure_response_to_audio(response: Response) -> Result<Vec<u8>, Box<dyn Error>> {
     let audio_content = response.bytes().await?;
-    Ok(audio_content.into_iter().collect())
+    let audio_bytes: Vec<u8> = audio_content.iter().cloned().collect();
+    Ok(audio_bytes)
 }
 
 pub async fn get_azure_response(text_to_speak: &str) -> Result<reqwest::Response, ReqwestError> {

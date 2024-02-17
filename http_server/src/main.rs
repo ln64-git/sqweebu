@@ -1,19 +1,12 @@
 // region: --- imports
 use actix_web::{web, App, HttpResponse, HttpServer, Responder};
-use core::{
-    AppState,
-    _utils::{
-        counter::{start_counter, stop_counter},
-        playback,
-    },
-};
+use core::{AppState, _utils::playback};
 use std::sync::Arc;
 use tokio::sync::Mutex;
 // endregion: --- imports
 
 fn register_endpoints(cfg: &mut web::ServiceConfig) {
-    cfg.route("/start", web::get().to(start_counter))
-        .route("/stop", web::get().to(stop_counter));
+    cfg.route("/start", web::get().to(test_endpoint));
 }
 // nexus: web::Data<Arc<Mutex<AppState>>>
 pub async fn test_endpoint() -> impl Responder {
@@ -39,6 +32,7 @@ async fn main() -> std::io::Result<()> {
     let nexus = Arc::new(Mutex::new(AppState {
         running: None,
         playback_send: playback::init_playback_channel().await,
+        sentence_queue: Vec::new(),
     }));
 
     HttpServer::new(move || {

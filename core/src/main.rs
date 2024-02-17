@@ -17,18 +17,17 @@ async fn main() {
     let nexus = AppState {
         running: None,
         playback_send: playback::init_playback_channel().await,
+        sentence_queue: Vec::new(),
     };
 
     let nexus_lock = Arc::new(Mutex::new(nexus));
 
-    if let Err(e) = speak_ollama(
+    speak_ollama(
         "list three things about yourself.".to_owned(),
         nexus_lock.clone(),
     )
     .await
-    {
-        eprintln!("Error in speak_ollama: {}", e);
-    }
+    .unwrap_or_else(|e| eprintln!("Error in speak_ollama: {}", e));
 
     println!("MAIN - Running main");
 }
