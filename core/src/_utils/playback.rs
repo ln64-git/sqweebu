@@ -1,9 +1,25 @@
+// region: --- imports
+use std::error::Error;
+use std::sync::Arc;
 use std::thread;
-
 use tokio::runtime::Runtime;
 use tokio::sync::mpsc::{self, Sender};
+use tokio::sync::Mutex;
+// endregion: --- imports
 
-use crate::{PlaybackCommand, PlaybackManager};
+use crate::{AppState, PlaybackCommand, PlaybackManager};
+
+pub async fn ollama_playback_queue(nexus: Arc<Mutex<AppState>>) -> Result<(), Box<dyn Error>> {
+    let nexus_lock = nexus.lock().await;
+    let playback_queue = nexus_lock.sentence_queue.clone(); // Fetch the playback queue from the state
+
+    println!(
+        "RECV - OLLAMA_PLAYBACK_QUEUE - playback_queue: {:#?}",
+        playback_queue
+    );
+
+    Ok(())
+}
 
 pub async fn init_playback_channel() -> Sender<PlaybackCommand> {
     let (playback_send, playback_recv) = mpsc::channel::<PlaybackCommand>(32);
@@ -15,7 +31,7 @@ pub async fn init_playback_channel() -> Sender<PlaybackCommand> {
 
     playback_send
 }
-
+/*  */
 async fn playback_control_thread(
     mut playback_recv: mpsc::Receiver<PlaybackCommand>,
     queue_send: mpsc::Sender<PlaybackCommand>,

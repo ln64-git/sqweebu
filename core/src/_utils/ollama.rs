@@ -4,6 +4,7 @@
 use crate::AppState;
 use crate::PlaybackCommand;
 use crate::_utils::azure::speak_text;
+use crate::_utils::playback::ollama_playback_queue;
 use reqwest;
 use sentence::SentenceTokenizer;
 use sentence::Token;
@@ -46,12 +47,21 @@ pub async fn speak_ollama(
     });
 
     while let Some(sentence) = sentence_recv.recv().await {
-        println!("sentence: {:#?}", sentence);
+        println!("SEND - SPEAK_OLLAMA - sentence: {:#?}", sentence);
 
         let mut nexus_lock = nexus.lock().await;
         let mut sentence_queue = &mut nexus_lock.sentence_queue; // Borrowing instead of moving
 
         sentence_queue.push(sentence.clone());
+
+        // Clone the nexus Arc for use in the async block
+        let nexus_clone = Arc::clone(&nexus);
+
+        tokio::spawn(async move {
+            if let Err(err) = ollama_playback_queue(nexus_clone).await {
+                eprintln!("Error running ollama_playback_queue: {}", err);
+            }
+        });
     }
     Ok(())
 }
