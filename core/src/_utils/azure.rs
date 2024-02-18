@@ -15,10 +15,8 @@ pub async fn speak_text(
     playback_send: &mpsc::Sender<PlaybackCommand>,
 ) -> Result<(), Box<dyn Error>> {
     let audio_data = get_azure_audio_response(text).await?;
-    playback_send
-        .send(PlaybackCommand::Play(audio_data))
-        .await
-        .map_err(|e| e.into())
+    playback_send.send(PlaybackCommand::Play(audio_data)).await;
+    Ok(())
 }
 
 pub async fn get_azure_audio_response(text_to_speak: &str) -> Result<Vec<u8>, Box<dyn Error>> {

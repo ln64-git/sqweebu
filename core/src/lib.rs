@@ -22,22 +22,18 @@ use tokio::sync::Mutex;
 
 #[derive(Debug)]
 pub struct AppState {
-    pub running: Option<mpsc::Sender<()>>,
-    pub playback_send: Sender<PlaybackCommand>,
-    pub sentence_map: Arc<Mutex<HashMap<usize, String>>>, // Wrap HashMap in Arc<Mutex<>>
+    pub playback_send: mpsc::Sender<PlaybackCommand>,
+    pub sentence_map: Arc<Mutex<HashMap<usize, String>>>,
 }
 
 impl Clone for AppState {
     fn clone(&self) -> Self {
         AppState {
-            running: self.running.as_ref().map(|sender| sender.clone()),
             playback_send: self.playback_send.clone(),
-            sentence_map: Arc::clone(&self.sentence_map), // Clone the Arc
+            sentence_map: Arc::clone(&self.sentence_map),
         }
     }
 }
-
-type SinkId = usize;
 
 #[derive(Debug, Clone)]
 pub enum PlaybackCommand {
@@ -45,26 +41,23 @@ pub enum PlaybackCommand {
     Pause,
     Stop,
     Resume,
+    GetLength,
 }
 
 pub struct PlaybackManager {
     pub command_queue: VecDeque<PlaybackCommand>,
     pub is_idle: AtomicBool,
-    pub current_sink: Option<SinkId>, // New field to track the current playing audio
-    pub next_id: SinkId,
-    pub sinks: HashMap<SinkId, Sink>,
-    pub streams: HashMap<SinkId, OutputStream>,
+    pub current_sink: Option<Sink>,
+    pub sink: Option<Sink>,
 }
 
 impl PlaybackManager {
-    pub fn new() -> Self {
+    pub fn new(sink: Sink) -> Self {
         PlaybackManager {
             command_queue: VecDeque::new(),
             is_idle: AtomicBool::new(true),
             current_sink: None,
-            next_id: 0,
-            sinks: HashMap::new(),
-            streams: HashMap::new(),
+            sink: Some(sink), // Set the sink field to the provided sink parameter
         }
     }
 
@@ -79,39 +72,31 @@ impl PlaybackManager {
     pub async fn handle_command(&mut self, command: PlaybackCommand) -> Result<(), Box<dyn Error>> {
         match command {
             PlaybackCommand::Play(audio_data) => {
-                let (stream, stream_handle) = OutputStream::try_default()?;
-                let sink = Sink::try_new(&stream_handle)?;
-                let source = Decoder::new(Cursor::new(audio_data))?;
-                sink.append(source);
-                sink.sleep_until_end();
-                // Assume playback starts immediately without blocking
-                let id = self.next_id;
-                self.sinks.insert(id, sink);
-                self.streams.insert(id, stream);
-                self.current_sink = Some(id); // Set current sink ID here
-                self.next_id += 1;
+                if let Some(ref mut sink) = self.sink {
+                    let source = Decoder::new(Cursor::new(audio_data))?;
+                    sink.append(source);
+                    sink.sleep_until_end();
+                }
             }
-
             PlaybackCommand::Pause => {
-                if let Some(id) = self.current_sink {
-                    if let Some(sink) = self.sinks.get(&id) {
-                        sink.pause();
-                    }
+                println!("Pausing audio playback");
+                if let Some(ref mut sink) = self.current_sink {
+                    sink.pause();
                 }
             }
             PlaybackCommand::Stop => {
-                if let Some(id) = self.current_sink.take() {
-                    // Remove the current sink from tracking
-                    if let Some(sink) = self.sinks.get(&id) {
-                        sink.stop(); // Stop the current sink
-                    }
+                if let Some(sink) = self.current_sink.take() {
+                    sink.stop();
                 }
             }
             PlaybackCommand::Resume => {
-                if let Some(id) = self.current_sink {
-                    if let Some(sink) = self.sinks.get(&id) {
-                        sink.play(); // Resume the current sink
-                    }
+                if let Some(ref mut sink) = self.current_sink {
+                    sink.play();
+                }
+            }
+            PlaybackCommand::GetLength => {
+                if let Some(ref mut sink) = self.current_sink {
+                    sink.len();
                 }
             }
         }

@@ -69,7 +69,6 @@ async fn main() -> std::io::Result<()> {
     env_logger::init();
 
     let nexus = Arc::new(Mutex::new(AppState {
-        running: None,
         playback_send: playback::init_playback_channel().await,
         sentence_map: Arc::new(Mutex::new(HashMap::new())),
     }));

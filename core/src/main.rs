@@ -16,9 +16,8 @@ async fn main() {
     std::env::set_var("RUST_LOG", "actix_web=debug");
     env_logger::init();
     let nexus = AppState {
-        running: None,
         playback_send: playback::init_playback_channel().await,
-        sentence_map: Arc::new(Mutex::new(HashMap::new())), // Wrap HashMap in Arc<Mutex<>>
+        sentence_map: Arc::new(Mutex::new(HashMap::new())),
     };
 
     println!("MAIN - Running main");
