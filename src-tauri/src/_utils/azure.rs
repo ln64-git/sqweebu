@@ -21,7 +21,7 @@ pub async fn speak_text(
 
 pub async fn get_azure_audio_response(text_to_speak: &str) -> Result<Vec<u8>, Box<dyn Error>> {
     dotenv().ok();
-    let api_key = env::var("API_KEY").expect("API_KEY not found in environment variables");
+    let api_key = env::var("API_KEY").expect("AZURE_API_KEY not found in environment variables");
 
     let region = "eastus";
     let voice_gender = "Female";
