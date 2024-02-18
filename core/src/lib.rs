@@ -41,13 +41,11 @@ pub enum PlaybackCommand {
     Pause,
     Stop,
     Resume,
-    GetLength,
 }
 
 pub struct PlaybackManager {
     pub command_queue: VecDeque<PlaybackCommand>,
     pub is_idle: AtomicBool,
-    pub current_sink: Option<Sink>,
     pub sink: Option<Sink>,
 }
 
@@ -56,7 +54,6 @@ impl PlaybackManager {
         PlaybackManager {
             command_queue: VecDeque::new(),
             is_idle: AtomicBool::new(true),
-            current_sink: None,
             sink: Some(sink), // Set the sink field to the provided sink parameter
         }
     }
@@ -80,23 +77,18 @@ impl PlaybackManager {
             }
             PlaybackCommand::Pause => {
                 println!("Pausing audio playback");
-                if let Some(ref mut sink) = self.current_sink {
+                if let Some(ref mut sink) = self.sink {
                     sink.pause();
                 }
             }
             PlaybackCommand::Stop => {
-                if let Some(sink) = self.current_sink.take() {
+                if let Some(sink) = self.sink.take() {
                     sink.stop();
                 }
             }
             PlaybackCommand::Resume => {
-                if let Some(ref mut sink) = self.current_sink {
+                if let Some(ref mut sink) = self.sink {
                     sink.play();
-                }
-            }
-            PlaybackCommand::GetLength => {
-                if let Some(ref mut sink) = self.current_sink {
-                    sink.len();
                 }
             }
         }
