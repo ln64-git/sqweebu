@@ -52,7 +52,6 @@ pub async fn speak_ollama(
     });
     while let Some(sentence) = sentence_recv.recv().await {
         speak_text(&sentence, &playback_send).await?;
-        index += 1;
     }
 
     Ok(())

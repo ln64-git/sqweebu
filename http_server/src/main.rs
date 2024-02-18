@@ -1,3 +1,4 @@
+// region: --- Imports
 use actix_web::{web, App, HttpResponse, HttpServer, Responder};
 use core::{
     AppState, PlaybackCommand,
@@ -5,6 +6,7 @@ use core::{
 };
 use std::sync::Arc;
 use tokio::sync::Mutex;
+// endregion: --- Imports
 
 fn register_endpoints(cfg: &mut web::ServiceConfig) {
     cfg.route("/test", web::get().to(test_endpoint))
@@ -12,6 +14,27 @@ fn register_endpoints(cfg: &mut web::ServiceConfig) {
         .route("/resume", web::get().to(resume_playback_endpoint))
         .route("/stop", web::get().to(stop_playback_endpoint));
 }
+
+#[tokio::main]
+async fn main() -> std::io::Result<()> {
+    std::env::set_var("RUST_LOG", "actix_web=debug");
+    env_logger::init();
+
+    let nexus = Arc::new(Mutex::new(AppState {
+        playback_send: playback::init_playback_channel().await,
+    }));
+
+    HttpServer::new(move || {
+        App::new()
+            .app_data(web::Data::new(nexus.clone()))
+            .configure(register_endpoints)
+    })
+    .bind("127.0.0.1:8080")?
+    .run()
+    .await
+}
+
+// region: --- Endpoints
 
 async fn pause_playback_endpoint(data: web::Data<Arc<Mutex<AppState>>>) -> impl Responder {
     let state = data.lock().await;
@@ -63,21 +86,4 @@ pub async fn test_endpoint(data: web::Data<Arc<Mutex<AppState>>>) -> impl Respon
     HttpResponse::Ok().body("Test Complete.")
 }
 
-#[tokio::main]
-async fn main() -> std::io::Result<()> {
-    std::env::set_var("RUST_LOG", "actix_web=debug");
-    env_logger::init();
-
-    let nexus = Arc::new(Mutex::new(AppState {
-        playback_send: playback::init_playback_channel().await,
-    }));
-
-    HttpServer::new(move || {
-        App::new()
-            .app_data(web::Data::new(nexus.clone()))
-            .configure(register_endpoints)
-    })
-    .bind("127.0.0.1:8080")?
-    .run()
-    .await
-}
+// endregion: --- Endpoints

@@ -15,9 +15,18 @@ use tokio::sync::Mutex;
 async fn main() {
     std::env::set_var("RUST_LOG", "actix_web=debug");
     env_logger::init();
-    let nexus = AppState {
-        playback_send: playback::init_playback_channel().await,
-    };
+    // let nexus = Arc::new(Mutex::new(AppState {
+    //     playback_send: playback::init_playback_channel().await,
+    // }));
+    // let playback_send = {
+    //     let nexus_lock = nexus.lock().await;
+    //     nexus_lock.playback_send.clone()
+    // };
 
+    // speak_text("hello?", &playback_send).await;
+    // speak_ollama(
+    //     "what is the color of night in the elder scrolls 4 obiviion".to_owned(),
+    //     nexus,
+    // );
     println!("MAIN - Running main");
 }
