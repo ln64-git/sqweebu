@@ -12,25 +12,19 @@ use crate::PlaybackCommand;
 
 pub async fn speak_text(
     text: &str,
-    playback_send: mpsc::Sender<PlaybackCommand>,
+    playback_send: &mpsc::Sender<PlaybackCommand>,
 ) -> Result<(), Box<dyn Error>> {
-    let azure_response = get_azure_response(text).await?;
-    let audio_data = azure_response_to_audio(azure_response).await?;
+    let audio_data = get_azure_audio_response(text).await?;
     playback_send
         .send(PlaybackCommand::Play(audio_data))
         .await
         .map_err(|e| e.into())
 }
 
-pub async fn azure_response_to_audio(response: Response) -> Result<Vec<u8>, Box<dyn Error>> {
-    let audio_content = response.bytes().await?;
-    Ok(audio_content.into_iter().collect())
-}
-
-pub async fn get_azure_response(text_to_speak: &str) -> Result<reqwest::Response, ReqwestError> {
+pub async fn get_azure_audio_response(text_to_speak: &str) -> Result<Vec<u8>, Box<dyn Error>> {
     dotenv().ok();
+    let api_key = env::var("API_KEY").expect("API_KEY not found in environment variables");
 
-    let subscription_key = env::var("API_KEY").unwrap();
     let region = "eastus";
     let voice_gender = "Female";
     let voice_name = "en-US-JennyNeural";
@@ -47,7 +41,7 @@ pub async fn get_azure_response(text_to_speak: &str) -> Result<reqwest::Response
 
     let token_response = reqwest::Client::new()
         .post(&token_url)
-        .header("Ocp-Apim-Subscription-Key", subscription_key)
+        .header("Ocp-Apim-Subscription-Key", api_key)
         .header("Content-Length", "0")
         .send()
         .await?;
@@ -66,5 +60,7 @@ pub async fn get_azure_response(text_to_speak: &str) -> Result<reqwest::Response
         .send()
         .await?;
 
-    Ok(tts_response)
+    // Extract audio content
+    let audio_content = tts_response.bytes().await?;
+    Ok(audio_content.into_iter().collect())
 }

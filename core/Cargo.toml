@@ -8,7 +8,6 @@ unused = "allow"
 
 [dependencies]
 actix-web = "4.5.1"
-chrono = "0.4.34"
 crossterm = "0.27.0"
 dotenv = "0.15.0"
 env_logger = "0.11.1"

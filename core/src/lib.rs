@@ -3,7 +3,6 @@
 // region: --- imports
 pub mod _utils;
 use _utils::azure;
-use _utils::azure::speak_text;
 use _utils::ollama;
 use _utils::playback;
 use rodio::Decoder;
@@ -14,6 +13,7 @@ use std::collections::VecDeque;
 use std::error::Error;
 use std::io::Cursor;
 use std::sync::atomic::AtomicBool;
+use std::sync::atomic::Ordering;
 use std::sync::Arc;
 use tokio::sync::mpsc;
 use tokio::sync::mpsc::Sender;
@@ -22,6 +22,7 @@ use tokio::sync::Mutex;
 
 #[derive(Debug)]
 pub struct AppState {
+    pub running: Option<mpsc::Sender<()>>,
     pub playback_send: Sender<PlaybackCommand>,
     pub sentence_map: Arc<Mutex<HashMap<usize, String>>>, // Wrap HashMap in Arc<Mutex<>>
 }
@@ -29,11 +30,14 @@ pub struct AppState {
 impl Clone for AppState {
     fn clone(&self) -> Self {
         AppState {
+            running: self.running.as_ref().map(|sender| sender.clone()),
             playback_send: self.playback_send.clone(),
             sentence_map: Arc::clone(&self.sentence_map), // Clone the Arc
         }
     }
 }
+
+type SinkId = usize;
 
 #[derive(Debug, Clone)]
 pub enum PlaybackCommand {
@@ -41,13 +45,15 @@ pub enum PlaybackCommand {
     Pause,
     Stop,
     Resume,
-    GetLength,
 }
 
 pub struct PlaybackManager {
     pub command_queue: VecDeque<PlaybackCommand>,
     pub is_idle: AtomicBool,
-    pub current_sink: Option<Sink>,
+    pub current_sink: Option<SinkId>, // New field to track the current playing audio
+    pub next_id: SinkId,
+    pub sinks: HashMap<SinkId, Sink>,
+    pub streams: HashMap<SinkId, OutputStream>,
 }
 
 impl PlaybackManager {
@@ -56,6 +62,9 @@ impl PlaybackManager {
             command_queue: VecDeque::new(),
             is_idle: AtomicBool::new(true),
             current_sink: None,
+            next_id: 0,
+            sinks: HashMap::new(),
+            streams: HashMap::new(),
         }
     }
 
@@ -75,28 +84,34 @@ impl PlaybackManager {
                 let source = Decoder::new(Cursor::new(audio_data))?;
                 sink.append(source);
                 sink.sleep_until_end();
-                self.current_sink = Some(sink);
+                // Assume playback starts immediately without blocking
+                let id = self.next_id;
+                self.sinks.insert(id, sink);
+                self.streams.insert(id, stream);
+                self.current_sink = Some(id); // Set current sink ID here
+                self.next_id += 1;
             }
 
             PlaybackCommand::Pause => {
-                println!("Pausing audio playback");
-                if let Some(ref mut sink) = self.current_sink {
-                    sink.pause(); // Pause the current sink
+                if let Some(id) = self.current_sink {
+                    if let Some(sink) = self.sinks.get(&id) {
+                        sink.pause();
+                    }
                 }
             }
             PlaybackCommand::Stop => {
-                if let Some(sink) = self.current_sink.take() {
-                    sink.stop(); // Stop the current sink
+                if let Some(id) = self.current_sink.take() {
+                    // Remove the current sink from tracking
+                    if let Some(sink) = self.sinks.get(&id) {
+                        sink.stop(); // Stop the current sink
+                    }
                 }
             }
             PlaybackCommand::Resume => {
-                if let Some(ref mut sink) = self.current_sink {
-                    sink.play(); // Resume the current sink
-                }
-            }
-            PlaybackCommand::GetLength => {
-                if let Some(ref mut sink) = self.current_sink {
-                    sink.len(); // Return the current sink
+                if let Some(id) = self.current_sink {
+                    if let Some(sink) = self.sinks.get(&id) {
+                        sink.play(); // Resume the current sink
+                    }
                 }
             }
         }

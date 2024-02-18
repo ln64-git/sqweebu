@@ -4,7 +4,6 @@
 use crate::AppState;
 use crate::PlaybackCommand;
 use crate::_utils::azure::speak_text;
-use crate::_utils::playback::ollama_playback_queue;
 use reqwest;
 use sentence::SentenceTokenizer;
 use sentence::Token;
@@ -17,6 +16,8 @@ use tokio::sync::mpsc;
 use tokio::sync::mpsc::Sender;
 use tokio::sync::Mutex;
 use tokio_stream::StreamExt;
+
+use super::playback::ollama_playback_queue;
 // endregion: --- Modules
 
 // region: --- Structs
