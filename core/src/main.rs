@@ -17,7 +17,6 @@ async fn main() {
     env_logger::init();
     let nexus = AppState {
         playback_send: playback::init_playback_channel().await,
-        sentence_map: Arc::new(Mutex::new(HashMap::new())),
     };
 
     println!("MAIN - Running main");

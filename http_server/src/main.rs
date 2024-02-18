@@ -3,7 +3,7 @@ use core::{
     AppState, PlaybackCommand,
     _utils::{ollama::speak_ollama, playback},
 };
-use std::{collections::HashMap, sync::Arc};
+use std::sync::Arc;
 use tokio::sync::Mutex;
 
 fn register_endpoints(cfg: &mut web::ServiceConfig) {
@@ -70,7 +70,6 @@ async fn main() -> std::io::Result<()> {
 
     let nexus = Arc::new(Mutex::new(AppState {
         playback_send: playback::init_playback_channel().await,
-        sentence_map: Arc::new(Mutex::new(HashMap::new())),
     }));
 
     HttpServer::new(move || {

@@ -23,14 +23,12 @@ use tokio::sync::Mutex;
 #[derive(Debug)]
 pub struct AppState {
     pub playback_send: mpsc::Sender<PlaybackCommand>,
-    pub sentence_map: Arc<Mutex<HashMap<usize, String>>>,
 }
 
 impl Clone for AppState {
     fn clone(&self) -> Self {
         AppState {
             playback_send: self.playback_send.clone(),
-            sentence_map: Arc::clone(&self.sentence_map),
         }
     }
 }
