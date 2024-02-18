@@ -58,7 +58,7 @@ impl PlaybackManager {
         }
     }
 
-    pub async fn start_processing_commands(&mut self) {
+    pub async fn process_command_queue(&mut self) {
         while let Some(command) = self.command_queue.pop_front() {
             self.handle_command(command)
                 .await
@@ -72,7 +72,6 @@ impl PlaybackManager {
                 if let Some(ref mut sink) = self.sink {
                     let source = Decoder::new(Cursor::new(audio_data))?;
                     sink.append(source);
-                    sink.sleep_until_end();
                 }
             }
             PlaybackCommand::Pause => {
