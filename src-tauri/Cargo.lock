@@ -332,6 +332,7 @@ dependencies = [
  "crossterm",
  "dotenv",
  "env_logger",
+ "lazy_static",
  "reqwest",
  "rodio",
  "sentence",
