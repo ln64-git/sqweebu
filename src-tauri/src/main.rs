@@ -89,7 +89,7 @@ async fn speak_ollama_from_frontend(prompt: String, app: tauri::AppHandle) -> Re
 // region: --- Playback Commands
 
 #[tauri::command]
-async fn pause_playback_from_frontend(prompt: String, app: tauri::AppHandle) -> Result<(), String> {
+async fn pause_playback_from_frontend(app: tauri::AppHandle) -> Result<(), String> {
     let playback_send = {
         let nexus_lock = app.state::<Arc<Mutex<AppState>>>();
         let nexus = nexus_lock.lock().await;
@@ -100,10 +100,7 @@ async fn pause_playback_from_frontend(prompt: String, app: tauri::AppHandle) -> 
 }
 
 #[tauri::command]
-async fn resume_playback_from_frontend(
-    prompt: String,
-    app: tauri::AppHandle,
-) -> Result<(), String> {
+async fn resume_playback_from_frontend(app: tauri::AppHandle) -> Result<(), String> {
     let playback_send = {
         let nexus_lock = app.state::<Arc<Mutex<AppState>>>();
         let nexus = nexus_lock.lock().await;
@@ -114,7 +111,7 @@ async fn resume_playback_from_frontend(
 }
 
 #[tauri::command]
-async fn stop_playback_from_frontend(prompt: String, app: tauri::AppHandle) -> Result<(), String> {
+async fn stop_playback_from_frontend(app: tauri::AppHandle) -> Result<(), String> {
     let playback_send = {
         let nexus_lock = app.state::<Arc<Mutex<AppState>>>();
         let nexus = nexus_lock.lock().await;
