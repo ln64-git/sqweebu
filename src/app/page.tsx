@@ -1,4 +1,5 @@
 "use client";
+import ChatBox from "@/components/chat-box";
 import PlaybackControls from "@/components/playback-controls";
 import { Button } from "@/components/ui/button";
 import Welcome from "@/components/welcome";
@@ -9,7 +10,7 @@ export default function Home() {
     <main className="h-screen flex flex-col">
       <PlaybackControls />
       <Welcome />
-      
+      <ChatBox />
     </main>
   );
 }
