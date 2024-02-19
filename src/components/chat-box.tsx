@@ -3,6 +3,7 @@ import { Button } from "./ui/button";
 import Image from "next/image";
 import { Input } from "@/components/ui/input";
 import arrow from "../../public/arrow_upward.svg";
+import mic from "../../public/mic.svg";
 import { invoke } from "@tauri-apps/api";
 
 export default function ChatBox() {
@@ -25,6 +26,9 @@ export default function ChatBox() {
 
   return (
     <div className="flex justify-between items-center px-4 py-2">
+      <Button variant="input" size="icon" onClick={handleSpeakOllama}>
+        <Image src={mic} alt="Arrow" />
+      </Button>
       <div className="flex justify-center items-center w-full gap-1">
         <Input
           type="prompt"
@@ -33,7 +37,7 @@ export default function ChatBox() {
           onKeyDown={handleEnterSubmit}
         />
       </div>
-      <Button size="icon" onClick={handleSpeakOllama}>
+      <Button variant="input" size="icon" onClick={handleSpeakOllama}>
         <Image src={arrow} alt="Arrow" />
       </Button>
     </div>
