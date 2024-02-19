@@ -6,7 +6,7 @@ import type { Metadata } from "next";
 import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = {
-  title: "Navi AI Voice Assistant",
+  title: "Sqweebu AI Voice Assistant",
   description:
     "Interact with Artifical Intelligence in a natural conversational tone.",
 };

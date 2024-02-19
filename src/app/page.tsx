@@ -26,7 +26,7 @@ export default function Home() {
   return (
     <main>
       <div className="h-screen flex flex-col justify-center items-center">
-        <h1 className="text-stone-400 pb-4 text-2xl">Navi Voice</h1>
+        <h1 className="text-stone-400 pb-4 text-2xl">Sqweebu</h1>
         <div className="w-3/4 flex flex-col gap-2 max-w-[200px]">
           <Button variant="home" onClick={handleSpeakText}>
             Speak Text

@@ -1,8 +1,8 @@
-# Navi AI Voice Assistant
+# Sqweebu AI Voice Assistant
 
 Real-time voice communication with Locally hosted or Remote LLMs
 
-Leveraging the recent advancments and general accessibility Artificial Intelligence, Navi AI Voice Assistant utilizes the Vosk API for real-time speech to text transcription. Queries are sent into a locally hosted Ollama server or remote via ChatGPT API. Finally, responses are forwarded to Microsoft Azure's Speech Synthesis service.
+Leveraging the recent advancments and general accessibility Artificial Intelligence, Sqweebu AI Voice Assistant utilizes the Vosk API for real-time speech to text transcription. Queries are sent into a locally hosted Ollama server or remote via ChatGPT API. Finally, responses are forwarded to Microsoft Azure's Speech Synthesis service.
 
 This application has been written and designed in Rust with Tauri to ensure cross-platform optimization and compatibility.
 
@@ -10,7 +10,7 @@ Initially I really wanted this to be a Privacy-focused, Self-Hosted solution alt
 
 ## Features
 
-- **Real-Time Voice Communication:** Experience seamless voice communication with Navi AI Voice Assistant, allowing for effortless interaction with your computer.
+- **Real-Time Voice Communication:** Experience seamless voice communication with Sqweebu AI Voice Assistant, allowing for effortless interaction with your computer.
 
 - **Locally Hosted or Remote LLMs:** Choose between locally hosted or remote Large Language Models, providing flexibility and control over your voice assistant setup.
 
@@ -18,7 +18,7 @@ Initially I really wanted this to be a Privacy-focused, Self-Hosted solution alt
 
 - **Microsoft Azure Integration:** Benefit from Microsoft Azure's Speech Synthesis service for high-quality, natural-sounding responses to your queries.
 
-- **Cross-Platform Compatibility:** Built with Rust and Tauri, Navi AI Voice Assistant ensures cross-platform optimization and compatibility, allowing you to seamlessly use the application on various desktop operating systems.
+- **Cross-Platform Compatibility:** Built with Rust and Tauri, Sqweebu AI Voice Assistant ensures cross-platform optimization and compatibility, allowing you to seamlessly use the application on various desktop operating systems.
 
 ## Installation
 

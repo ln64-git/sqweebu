@@ -7,7 +7,7 @@
     "distDir": "../out"
   },
   "package": {
-    "productName": "navi",
+    "productName": "sqweebu",
     "version": "0.1.0"
   },
   "tauri": {
@@ -70,7 +70,7 @@
         "fullscreen": false,
         "height": 600,
         "resizable": true,
-        "title": "navi",
+        "title": "sqweebu",
         "width": 800
       }
     ]
