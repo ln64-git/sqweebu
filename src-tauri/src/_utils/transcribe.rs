@@ -1,12 +1,8 @@
-// src/_utils/transcribe.rs
-
 // region: --- Imports
-
 use anyhow::{Context, Result};
 use serde_json::Value;
 use std::path::{Path, PathBuf};
 use vosk::{CompleteResult, Model, Recognizer};
-
 // endregion: --- Imports
 
 fn serialize_complete_result(result: &CompleteResult) -> Result<String> {

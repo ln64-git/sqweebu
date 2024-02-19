@@ -116,7 +116,7 @@ async fn stop_playback_from_frontend(prompt: String, app: tauri::AppHandle) -> R
         let nexus = nexus_lock.lock().await;
         nexus.playback_send.clone()
     };
-    task::spawn(async move { speaplayback_send.send(PlaybackCommand::Stop).await });
+    task::spawn(async move { playback_send.send(PlaybackCommand::Stop).await });
     Ok(())
 }
 
