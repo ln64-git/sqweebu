@@ -8,6 +8,7 @@ use _utils::playback;
 use rodio::Decoder;
 use rodio::OutputStream;
 use rodio::Sink;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::collections::VecDeque;
 use std::error::Error;
@@ -33,7 +34,8 @@ impl Clone for AppState {
     }
 }
 
-#[derive(Debug, Clone)]
+// Ensure PlaybackCommand and its dependencies implement Serialize and Deserialize
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub enum PlaybackCommand {
     Play(Vec<u8>),
     Pause,

@@ -3,6 +3,7 @@
 use reqwest::Response;
 use std::env;
 use std::error::Error;
+use tauri::async_runtime::Sender;
 use tokio::sync::mpsc;
 
 use dotenv::dotenv;
@@ -10,6 +11,7 @@ use reqwest::Error as ReqwestError;
 
 use crate::PlaybackCommand;
 
+#[tauri::command]
 pub async fn speak_text(
     text: &str,
     playback_send: &mpsc::Sender<PlaybackCommand>,
@@ -21,7 +23,8 @@ pub async fn speak_text(
 
 pub async fn get_azure_audio_response(text_to_speak: &str) -> Result<Vec<u8>, Box<dyn Error>> {
     dotenv().ok();
-    let api_key = env::var("API_KEY").expect("AZURE_API_KEY not found in environment variables");
+    let api_key =
+        env::var("AZURE_API_KEY").expect("AZURE_API_KEY not found in environment variables");
 
     let region = "eastus";
     let voice_gender = "Female";

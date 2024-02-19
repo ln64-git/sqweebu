@@ -32,17 +32,15 @@ struct OllamaFragment {
     done: bool,
 }
 // endregion: --- Structs
-
 pub async fn speak_ollama(
     prompt: String,
     nexus: Arc<Mutex<AppState>>,
 ) -> Result<(), Box<dyn Error>> {
     let mut index = 1;
     let (sentence_send, mut sentence_recv) = mpsc::channel::<String>(32);
-    let playback_send = {
-        let nexus_lock = nexus.lock().await;
-        nexus_lock.playback_send.clone()
-    };
+
+    // Clone the sender directly from the Arc<Mutex<AppState>> instead of accessing it via lock
+    let playback_send = nexus.lock().await.playback_send.clone();
 
     tokio::spawn(async move {
         match ollama_generate_api(prompt.clone(), sentence_send).await {
@@ -50,7 +48,9 @@ pub async fn speak_ollama(
             Err(e) => eprintln!("Failed to generate sentences: {}", e),
         }
     });
+
     while let Some(sentence) = sentence_recv.recv().await {
+        // No need to dereference or lock the playback_send anymore
         speak_text(&sentence, &playback_send).await?;
     }
 
