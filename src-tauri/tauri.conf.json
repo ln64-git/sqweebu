@@ -16,6 +16,9 @@
       "iconAsTemplate": true
     },
     "allowlist": {
+      "globalShortcut": {
+        "all": true
+      },
       "all": false
     },
     "bundle": {

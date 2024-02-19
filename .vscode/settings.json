@@ -1,5 +1,13 @@
 {
-  "hide-files.files": ["target", ".vscode"],
+  "hide-files.files": [
+    "target",
+    ".vscode",
+    "postcss.config.js",
+    "package-lock.json",
+    "next-env.d.ts",
+    ".next",
+    "node_modules"
+  ],
   "files.exclude": {
     "**/.git": true,
     "**/.svn": true,
@@ -8,6 +16,11 @@
     "**/.DS_Store": true,
     "**/Thumbs.db": true,
     "target": true,
-    ".vscode": true
+    ".vscode": true,
+    "postcss.config.js": true,
+    "package-lock.json": true,
+    "next-env.d.ts": true,
+    ".next": true,
+    "node_modules": true
   }
 }
