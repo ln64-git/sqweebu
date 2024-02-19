@@ -42,6 +42,9 @@ pub enum PlaybackCommand {
     Pause,
     Stop,
     Resume,
+    FastForward,
+    Rewind,
+    Clear,
 }
 
 pub struct PlaybackManager {
@@ -55,7 +58,7 @@ impl PlaybackManager {
         PlaybackManager {
             command_queue: VecDeque::new(),
             is_idle: AtomicBool::new(true),
-            sink: Some(sink), // Set the sink field to the provided sink parameter
+            sink: Some(sink),
         }
     }
 
@@ -89,6 +92,22 @@ impl PlaybackManager {
             PlaybackCommand::Resume => {
                 if let Some(ref mut sink) = self.sink {
                     sink.play();
+                }
+            }
+            PlaybackCommand::FastForward => {
+                if let Some(ref mut sink) = self.sink {
+                    sink.skip_one();
+                }
+            }
+            PlaybackCommand::Rewind => {
+                if let Some(ref mut sink) = self.sink {
+                    // TODO
+                    sink.play();
+                }
+            }
+            PlaybackCommand::Clear => {
+                if let Some(ref mut sink) = self.sink {
+                    sink.clear();
                 }
             }
         }

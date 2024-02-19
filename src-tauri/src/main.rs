@@ -43,7 +43,8 @@ async fn main() {
             speak_ollama_from_frontend,
             pause_playback_from_frontend,
             resume_playback_from_frontend,
-            stop_playback_from_frontend
+            stop_playback_from_frontend,
+            fast_forward_playback_from_frontend
         ])
         .manage(nexus.clone())
         .build(tauri::generate_context!())
@@ -118,6 +119,17 @@ async fn stop_playback_from_frontend(app: tauri::AppHandle) -> Result<(), String
         nexus.playback_send.clone()
     };
     task::spawn(async move { playback_send.send(PlaybackCommand::Stop).await });
+    Ok(())
+}
+
+#[tauri::command]
+async fn fast_forward_playback_from_frontend(app: tauri::AppHandle) -> Result<(), String> {
+    let playback_send = {
+        let nexus_lock = app.state::<Arc<Mutex<AppState>>>();
+        let nexus = nexus_lock.lock().await;
+        nexus.playback_send.clone()
+    };
+    task::spawn(async move { playback_send.send(PlaybackCommand::FastForward).await });
     Ok(())
 }
 

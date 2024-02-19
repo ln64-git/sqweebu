@@ -13,7 +13,7 @@ export default function PlaybackControls() {
   const [isPlaying, setIsPlaying] = useState(false);
 
   useEffect(() => {
-    // TODO - get sink and sync it it with isPlaying
+    // TODO - get sink and sync it with isPlaying
   });
 
   const togglePlayPause = () => {
@@ -40,6 +40,11 @@ export default function PlaybackControls() {
       .then((response) => console.log(response))
       .catch((error) => console.error(error));
   };
+  const handleFastForward = () => {
+    invoke("fast_forward_playback_from_frontend")
+      .then((response) => console.log(response))
+      .catch((error) => console.error(error));
+  };
 
   return (
     <div className="flex justify-between items-center px-4 py-2">
@@ -56,11 +61,11 @@ export default function PlaybackControls() {
             alt={isPlaying ? "Pause" : "Play"}
           />
         </Button>
-        <Button size="icon">
+        <Button onClick={handleFastForward} size="icon">
           <Image src={fast_forward} alt="Fast Forward" />
         </Button>
       </div>
-      <Button size="icon">
+      <Button onClick={handleStop} size="icon">
         <Image src={stop} alt="Stop" />
       </Button>
     </div>
