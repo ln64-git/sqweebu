@@ -1,36 +1,39 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Navi AI Voice Assistant
 
-## Getting Started
+Real-time voice communication with Locally hosted or Remote LLMs
 
-First, run the development server:
+Leveraging the recent advancments and general accessibility Artificial Intelligence, Navi AI Voice Assistant utilizes the Vosk API for real-time speech to text transcription. Queries are sent into a locally hosted Ollama server or remote via ChatGPT API. Finally, responses are forwarded to Microsoft Azure's Speech Synthesis service.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+This application has been written and designed in Rust with Tauri to ensure cross-platform optimization and compatibility.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Initially I really wanted this to be a Privacy-focused, Self-Hosted solution although until locally hosted speech synthesis becomes more relatively accessible I believe interacting with the cloud is our best option for now.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Features
 
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
+- **Real-Time Voice Communication:** Experience seamless voice communication with Navi AI Voice Assistant, allowing for effortless interaction with your computer.
 
-## Learn More
+- **Locally Hosted or Remote LLMs:** Choose between locally hosted or remote Large Language Models, providing flexibility and control over your voice assistant setup.
 
-To learn more about Next.js, take a look at the following resources:
+- **Vosk API Integration:** Utilize the power of the Vosk API for lightning-fast speech-to-text transcription, ensuring accurate and responsive communication.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- **Microsoft Azure Integration:** Benefit from Microsoft Azure's Speech Synthesis service for high-quality, natural-sounding responses to your queries.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
+- **Cross-Platform Compatibility:** Built with Rust and Tauri, Navi AI Voice Assistant ensures cross-platform optimization and compatibility, allowing you to seamlessly use the application on various desktop operating systems.
 
-## Deploy on Vercel
+## Installation
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+1. Assure Ollama server is running on port 11434
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+2. Sign up for Microsoft Azure
+   NOTE: Microsoft offers one year free subscription to their Azure Services, after that their free tier caps out at five hours of audio a month then pay as you go charges $1 / hour.
+
+3. Assure the following are propperly configured
+   - ollama_model_name
+   - ollama_alternitive_port (optional)
+   - azure_api_key
+
+## Usage
+
+- Download the version based off your operating system found in Releases
+
+- Launch Application
