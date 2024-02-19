@@ -1,8 +1,12 @@
+// src/_utils/transcribe.rs
+
 // region: --- Imports
+
 use anyhow::{Context, Result};
 use serde_json::Value;
 use std::path::{Path, PathBuf};
-use vosk::{CompleteResult, Model, Recognizer}; 
+use vosk::{CompleteResult, Model, Recognizer};
+
 // endregion: --- Imports
 
 fn serialize_complete_result(result: &CompleteResult) -> Result<String> {
@@ -11,9 +15,7 @@ fn serialize_complete_result(result: &CompleteResult) -> Result<String> {
 
 pub async fn speech_to_text(audio_file_path: &Path) -> Result<String> {
     let model_path = PathBuf::from("/home/lucian/Documents/Models/vosk-model-small-en-us-0.15");
-    let model_path_str = model_path
-        .display() 
-        .to_string(); 
+    let model_path_str = model_path.display().to_string();
 
     let model = Model::new(&model_path_str).context("Failed to load model")?;
 

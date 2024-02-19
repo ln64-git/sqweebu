@@ -16,6 +16,11 @@
       "iconAsTemplate": true
     },
     "allowlist": {
+      "clipboard": {
+        "all": true,
+        "writeText": true,
+        "readText": true
+      },
       "globalShortcut": {
         "all": true
       },

@@ -34,7 +34,8 @@ impl Clone for AppState {
     }
 }
 
-// Ensure PlaybackCommand and its dependencies implement Serialize and Deserialize
+// region: --- Playback Manager
+
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub enum PlaybackCommand {
     Play(Vec<u8>),
@@ -94,3 +95,5 @@ impl PlaybackManager {
         Ok(())
     }
 }
+
+// endregion: --- Playback Manager

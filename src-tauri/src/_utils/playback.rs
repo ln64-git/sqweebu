@@ -1,4 +1,8 @@
+// src/_utils/playback.rs
+
 // region: --- importswWE
+use crate::_utils::azure::speak_text;
+use crate::{AppState, PlaybackCommand, PlaybackManager};
 use rodio::{OutputStream, Sink};
 use std::error::Error;
 use std::sync::Arc;
@@ -7,9 +11,6 @@ use tokio::runtime::Runtime;
 use tokio::sync::mpsc::{self, Sender};
 use tokio::sync::Mutex;
 // endregion: --- imports
-
-use crate::_utils::azure::speak_text;
-use crate::{AppState, PlaybackCommand, PlaybackManager};
 
 pub async fn init_playback_channel() -> Sender<PlaybackCommand> {
     let (playback_send, playback_recv) = mpsc::channel::<PlaybackCommand>(32);

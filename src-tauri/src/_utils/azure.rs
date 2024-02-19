@@ -1,15 +1,17 @@
 // src/_utils/azure.rs
 
+// region: --- Imports
+
+use crate::PlaybackCommand;
+use dotenv::dotenv;
+use reqwest::Error as ReqwestError;
 use reqwest::Response;
 use std::env;
 use std::error::Error;
 use tauri::async_runtime::Sender;
 use tokio::sync::mpsc;
 
-use dotenv::dotenv;
-use reqwest::Error as ReqwestError;
-
-use crate::PlaybackCommand;
+// endregion: --- Imports
 
 #[tauri::command]
 pub async fn speak_text(

@@ -1,6 +1,7 @@
 // src/_utils/ollama.rs
 
 // region: --- Modules
+
 use crate::AppState;
 use crate::PlaybackCommand;
 use crate::_utils::azure::speak_text;
@@ -16,9 +17,11 @@ use tokio::sync::mpsc;
 use tokio::sync::mpsc::Sender;
 use tokio::sync::Mutex;
 use tokio_stream::StreamExt;
+
 // endregion: --- Modules
 
 // region: --- Structs
+
 #[derive(Deserialize, Serialize)] // Make sure to derive Deserialize
 struct GenerateRequest {
     model: String,
@@ -31,16 +34,15 @@ struct OllamaFragment {
     response: String,
     done: bool,
 }
+
 // endregion: --- Structs
+
 pub async fn speak_ollama(
     prompt: String,
-    nexus: Arc<Mutex<AppState>>,
+    playback_send: &mpsc::Sender<PlaybackCommand>,
 ) -> Result<(), Box<dyn Error>> {
     let mut index = 1;
     let (sentence_send, mut sentence_recv) = mpsc::channel::<String>(32);
-
-    // Clone the sender directly from the Arc<Mutex<AppState>> instead of accessing it via lock
-    let playback_send = nexus.lock().await.playback_send.clone();
 
     tokio::spawn(async move {
         match ollama_generate_api(prompt.clone(), sentence_send).await {
@@ -50,12 +52,13 @@ pub async fn speak_ollama(
     });
 
     while let Some(sentence) = sentence_recv.recv().await {
-        // No need to dereference or lock the playback_send anymore
         speak_text(&sentence, &playback_send).await?;
     }
 
     Ok(())
 }
+
+// region: --- Ollama API
 
 pub async fn ollama_generate_api(
     final_prompt: String,
@@ -75,7 +78,7 @@ pub async fn ollama_generate_api(
         .await?
         .bytes_stream();
 
-    let mut stream_ended = false; // Flag to track if response stream has ended
+    let mut stream_ended = false;
     let mut sentence = String::new();
 
     while let Some(chunk) = response_stream.next().await {
@@ -98,7 +101,6 @@ pub async fn ollama_generate_api(
             }
         }
     }
-    // Set stream_ended to true when the response stream ends
     stream_ended = true;
     Ok(())
 }
@@ -124,3 +126,5 @@ async fn detect_punctuation(fragment: OllamaFragment) -> bool {
     }
     return false;
 }
+
+// endregion: --- Ollama API
