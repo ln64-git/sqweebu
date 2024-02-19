@@ -13,7 +13,6 @@ use tokio::sync::mpsc;
 
 // endregion: --- Imports
 
-#[tauri::command]
 pub async fn speak_text(
     text: &str,
     playback_send: &mpsc::Sender<PlaybackCommand>,

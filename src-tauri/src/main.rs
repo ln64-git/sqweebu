@@ -5,7 +5,6 @@
 
 use app::AppState;
 use app::PlaybackCommand;
-use app::_utils::azure::__cmd__speak_text;
 use app::_utils::azure::speak_text;
 use app::_utils::ollama::speak_ollama;
 use app::_utils::playback;
@@ -39,8 +38,14 @@ async fn main() {
     tauri::Builder::default()
         .system_tray(system_tray)
         .on_system_tray_event(|app, event| handle_system_tray_event(app, event))
-        .invoke_handler(tauri::generate_handler![speak_text_from_frontend])
-        .manage(nexus.clone()) // Manage the state with Tauri
+        .invoke_handler(tauri::generate_handler![
+            speak_text_from_frontend,
+            speak_ollama_from_frontend,
+            pause_playback_from_frontend,
+            resume_playback_from_frontend,
+            stop_playback_from_frontend
+        ])
+        .manage(nexus.clone())
         .build(tauri::generate_context!())
         .expect("error while building tauri application")
         .run(|_app_handle, event| match event {
@@ -68,7 +73,6 @@ async fn speak_text_from_frontend(text: String, app: tauri::AppHandle) -> Result
 
 #[tauri::command]
 async fn speak_ollama_from_frontend(prompt: String, app: tauri::AppHandle) -> Result<(), String> {
-    // Access the playback_send from the app handle
     let playback_send = {
         let nexus_lock = app.state::<Arc<Mutex<AppState>>>();
         let nexus = nexus_lock.lock().await;
