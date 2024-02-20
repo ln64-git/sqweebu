@@ -5,7 +5,7 @@ import ResponseMessage from "./chat-response-message";
 
 export default function ChatMain() {
   return (
-    <div className="flex-1 mx-4 p-4  ">
+    <div className="flex-1 mx-4 p-10  ">
       <ChatMessage />
       <ResponseMessage />
     </div>
