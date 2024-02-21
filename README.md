@@ -1,4 +1,4 @@
-# Navi AI Voice Assistant
+# Squeebu AI Voice Assistant
 
 Real-time voice communication with Locally hosted or Remote LLMs
 
