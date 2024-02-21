@@ -1,9 +1,10 @@
 import React from "react";
-import Image, { StaticImageData } from "next/image";
+import { StaticImageData } from "next/image";
+import HoverableIcon from "@/utils/hoverable-icon";
 
 interface PlaybackButtonProps {
   icon?: {
-    src: StaticImageData;
+    src: string;
     alt: string;
   };
   onClick?: () => void;
@@ -17,7 +18,7 @@ const PlaybackButton: React.FC<PlaybackButtonProps> = ({ icon, onClick }) => (
     onClick={onClick}
     style={{ cursor: onClick ? "pointer" : "default" }}
   >
-    {icon ? <Image width={25} src={icon.src} alt={icon.alt} /> : null}
+    {icon ? <HoverableIcon src={icon.src} alt={icon.alt} /> : null}
   </button>
 );
 
