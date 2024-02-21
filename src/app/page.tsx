@@ -1,9 +1,6 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import ChatFooter from "@/components/chat/chat-footer";
 import ChatMain from "@/components/chat/chat-main";
-import SideBar from "@/components/sidebar/sidebar";
-import Header from "@/components/header/header";
 import useNexus from "@/store";
 
 export default function Home() {

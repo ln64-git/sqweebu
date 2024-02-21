@@ -2,8 +2,8 @@
 
 import Image from "next/image";
 import React, { useRef, useEffect } from "react";
-import arrow from "../../../public/chat/arrow_upward.svg";
-import mic from "../../../public/chat/mic.svg";
+import arrow from "../../public/chat/arrow_upward.svg";
+import mic from "../../public/chat/mic.svg";
 
 export default function ChatFooter() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -34,7 +34,7 @@ export default function ChatFooter() {
   }, [textareaRef]);
 
   return (
-    <div className="w-full bg-zinc-900 px-1">
+    <div className="w-full bg-zinc-900 bg-opacity-60 px-1">
       <div className="max-w-xl mx-auto pt-1.5 pb-2 pl-2 flex">
         <div className="bg-zinc-950 rounded-md w-full flex justify-between">
           <textarea
