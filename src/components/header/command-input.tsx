@@ -1,28 +1,18 @@
 import React, { useState, useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import useNexus from "@/store";
 
 export default function CommandInput() {
-  const [isMobile, setIsMobile] = useState(false);
-
-  useEffect(() => {
-    const checkIsMobile = () => {
-      setIsMobile(window.innerWidth < 350);
-    };
-
-    checkIsMobile();
-    window.addEventListener("resize", checkIsMobile);
-
-    return () => window.removeEventListener("resize", checkIsMobile);
-  });
+  const isMobile = useNexus((state) => state.isMobile);
 
   return (
     <AnimatePresence>
       <div className="flex justify-center flex-grow">
         {!isMobile && (
           <motion.div
-            initial={{ opacity: 0 }} // Initial opacity when component mounts
-            animate={{ opacity: 1 }} // Animate opacity to 1 to show the input
-            transition={{ duration: 0.3 }} // Transition duration for fade animation
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.3 }}
             className="bg-zinc-950 w-full bg-opacity-80 rounded-md m-1 backdrop-blur-sm"
           >
             <input
