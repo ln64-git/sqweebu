@@ -1,4 +1,4 @@
-# Squeebu AI Voice Assistant
+# Sqweebu AI Voice Assistant
 
 Real-time voice communication with Locally hosted or Remote LLMs
 
