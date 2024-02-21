@@ -1,7 +1,8 @@
 import { Burger } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import Image from "next/image";
-import PlaybackControls from "../playback-controls";
+import PlaybackControls from "../playback/playback-controls";
+import IconButton from "../playback/playback-icon-button";
 
 export default function Header() {
   const [opened, { toggle }] = useDisclosure();
@@ -15,12 +16,14 @@ export default function Header() {
           aria-label="Toggle navigation"
           size={"sm"}
           color="dark"
-          className="mr-4" // Add margin to separate from input
+          className="mr-4"
         />
-        <div className="bg-zinc-950 bg-opacity-80 rounded-md m-1 backdrop-blur-sm">
+      </div>
+      <div className="flex justify-center flex-grow ">
+        <div className="bg-zinc-950 w-full bg-opacity-80 rounded-md m-1 backdrop-blur-sm   ">
           <input
             type="text"
-            className="w-full caret-transparent py-2 rounded-md px-4 text-xs bg-transparent text-zinc-500 placeholder-zinc-400 text-center backdrop-blur-lg placeholder-opacity-50 outline-none focus:outline-none" // Removed selected effects and made the font smaller
+            className="w-full caret-transparent py-2 rounded-md px-4 text-xs bg-transparent text-zinc-500 placeholder-zinc-400 text-center backdrop-blur-lg placeholder-opacity-50 outline-none focus:outline-none"
             placeholder="Command"
           />
         </div>
