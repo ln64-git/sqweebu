@@ -7,6 +7,7 @@ import person from "../../../public/sidebar/person.svg";
 import model from "../../../public/sidebar/model.svg";
 import chat from "../../../public/sidebar/chat.svg";
 import HoverableIcon from "@/utils/hoverable-icon";
+import LightSwitch from "./light-switch";
 
 export default function SideBar() {
   return (
@@ -17,8 +18,8 @@ export default function SideBar() {
         <HoverableIcon src={person} alt="person" />
         <HoverableIcon src={command} alt="command" />
         <HoverableIcon src={keyboard} alt="keyboard" />
-        <HoverableIcon src={settings} alt="settings" />
       </div>
+      <LightSwitch />
     </div>
   );
 }
