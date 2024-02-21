@@ -5,9 +5,9 @@ import ResponseMessage from "./chat-response-message";
 export default function ChatMain() {
   return (
     <div className="flex-1 px-4 py-2  text-zinc-400">
-      <ChatMessage />
+      {/* <ChatMessage />
       <Divider />
-      <ResponseMessage />
+      <ResponseMessage /> */}
     </div>
   );
 }
