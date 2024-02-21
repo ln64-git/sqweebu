@@ -6,6 +6,7 @@ import React from "react";
 export default function BurgerButton() {
   const [opened, { toggle }] = useDisclosure();
   const setSidebar = useNexus((state) => state.setSidebar);
+  const darkMode = useNexus((state) => state.darkMode);
 
   const handleClick = () => {
     setSidebar(!opened);

@@ -18,6 +18,7 @@ export default function SideBar() {
         <HoverableIcon src={person} alt="person" />
         <HoverableIcon src={command} alt="command" />
         <HoverableIcon src={keyboard} alt="keyboard" />
+        <HoverableIcon src={settings} alt="settings" />
       </div>
       <LightSwitch />
     </div>
