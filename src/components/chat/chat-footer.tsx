@@ -1,4 +1,4 @@
-// ChatFooter Component
+"use client";
 
 import Image from "next/image";
 import React, { useRef, useEffect } from "react";
@@ -7,6 +7,17 @@ import mic from "../../../public/chat/mic.svg";
 
 export default function ChatFooter() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const handleEnterSubmit = (
+    event: React.KeyboardEvent<HTMLTextAreaElement>
+  ) => {
+    if (event.key === "Enter" && !event.shiftKey) {
+      event.preventDefault();
+      console.log("Submit message:", event.currentTarget.value);
+      // Add logic to submit the message here
+      event.currentTarget.value = "";
+    }
+  };
 
   useEffect(() => {
     const textarea = textareaRef.current;
@@ -23,9 +34,9 @@ export default function ChatFooter() {
   }, [textareaRef]);
 
   return (
-    <div className=" w-full bg-zinc-900 px-1 ">
-      <div className="max-w-xl mx-auto pt-1.5 pb-2 pl-2 flex ">
-        <div className="bg-zinc-950 rounded-md w-full flex justify-between ">
+    <div className="w-full bg-zinc-900 px-1">
+      <div className="max-w-xl mx-auto pt-1.5 pb-2 pl-2 flex">
+        <div className="bg-zinc-950 rounded-md w-full flex justify-between">
           <textarea
             ref={textareaRef}
             style={{
@@ -37,6 +48,7 @@ export default function ChatFooter() {
             className="p-2.5 w-full text-sm rounded-lg bg-zinc-950"
             rows={1}
             spellCheck={true}
+            onKeyDown={handleEnterSubmit}
           ></textarea>
           <div className="flex items-center justify-center pr-2">
             <Image
@@ -47,7 +59,7 @@ export default function ChatFooter() {
             />
           </div>
         </div>
-        <div className="flex justify-between mx-1 items-center ">
+        <div className="flex justify-between mx-1 items-center">
           <Image src={mic} width={40} alt="mic" />
         </div>
       </div>

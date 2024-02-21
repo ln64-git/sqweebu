@@ -1,3 +1,4 @@
+"use client";
 import { useState } from "react";
 import HoverableIcon from "@/utils/hoverable-icon";
 import light from "../../../public/sidebar/light.svg";

@@ -1,7 +1,7 @@
+"use client";
 import useNexus from "@/store";
 import { Burger } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
-import React from "react";
 
 export default function BurgerButton() {
   const [opened, { toggle }] = useDisclosure();

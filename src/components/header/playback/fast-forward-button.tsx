@@ -1,13 +1,13 @@
 import React from "react";
 import fast_forward from "../../../../public/chat/fast_forward.svg";
-import PlaybackButton from "./playback-icon-button";
+import IconButton from "../../../utils/icon-button";
 
 interface FastForwardButtonProps {
   onClick: () => void;
 }
 
 const FastForwardButton: React.FC<FastForwardButtonProps> = ({ onClick }) => (
-  <PlaybackButton
+  <IconButton
     icon={{ src: fast_forward, alt: "fast forward" }}
     onClick={onClick}
   />
