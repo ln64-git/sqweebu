@@ -1,8 +1,8 @@
 // PlayButton.tsx
 import React from "react";
-import play_arrow from "../../../public/chat/play_arrow.svg";
-import pause from "../../../public/chat/pause.svg";
-import IconButton from "./playback-icon-button";
+import play_arrow from "../../../../public/chat/play_arrow.svg";
+import pause from "../../../../public/chat/pause.svg";
+import PlaybackButton from "./playback-icon-button";
 
 interface PlayButtonProps {
   isPlaying: boolean;
@@ -10,7 +10,7 @@ interface PlayButtonProps {
 }
 
 const PlayButton: React.FC<PlayButtonProps> = ({ isPlaying, onClick }) => (
-  <IconButton
+  <PlaybackButton
     icon={{
       src: isPlaying ? pause : play_arrow,
       alt: isPlaying ? "pause" : "play",

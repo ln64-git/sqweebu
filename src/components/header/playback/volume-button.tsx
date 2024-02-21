@@ -1,8 +1,8 @@
 // VolumeButton.tsx
 import React from "react";
-import volume_up from "../../../public/chat/volume_up.svg";
-import volume_mute from "../../../public/chat/volume_mute.svg";
-import IconButton from "./playback-icon-button";
+import volume_up from "../../../../public/chat/volume_up.svg";
+import volume_mute from "../../../../public/chat/volume_mute.svg";
+import PlaybackButton from "./playback-icon-button";
 
 interface VolumeButtonProps {
   isMuted: boolean;
@@ -10,7 +10,7 @@ interface VolumeButtonProps {
 }
 
 const VolumeButton: React.FC<VolumeButtonProps> = ({ isMuted, onClick }) => (
-  <IconButton
+  <PlaybackButton
     icon={{
       src: isMuted ? volume_mute : volume_up,
       alt: isMuted ? "volume mute" : "volume up",

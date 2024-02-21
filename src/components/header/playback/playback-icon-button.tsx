@@ -1,7 +1,7 @@
 import React from "react";
 import Image, { StaticImageData } from "next/image";
 
-interface IconButtonProps {
+interface PlaybackButtonProps {
   icon?: {
     src: StaticImageData;
     alt: string;
@@ -9,7 +9,7 @@ interface IconButtonProps {
   onClick?: () => void;
 }
 
-const IconButton: React.FC<IconButtonProps> = ({ icon, onClick }) => (
+const PlaybackButton: React.FC<PlaybackButtonProps> = ({ icon, onClick }) => (
   <button
     className={`w-8 h-8 ${
       icon ? " p-1 bg-opacity-80 rounded-md m-1 backdrop-blur-sm" : ""
@@ -21,4 +21,4 @@ const IconButton: React.FC<IconButtonProps> = ({ icon, onClick }) => (
   </button>
 );
 
-export default IconButton;
+export default PlaybackButton;

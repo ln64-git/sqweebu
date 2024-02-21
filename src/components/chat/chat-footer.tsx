@@ -22,7 +22,7 @@ export default function ChatFooter() {
   }, [textareaRef]);
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 w-full bg-zinc-900 px-1 pt-.5">
+    <div className=" w-full bg-zinc-900 px-1 pt-.5">
       <div className="max-w-xl mx-auto">
         <div className="bg-zinc-950 rounded-md m-2 flex justify-between ">
           <textarea

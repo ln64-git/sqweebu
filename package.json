@@ -19,6 +19,7 @@
     "@mantine/spotlight": "^7.5.3",
     "@tabler/icons-react": "^2.47.0",
     "@tauri-apps/api": "^1.5.3",
+    "framer-motion": "^11.0.5",
     "next": "14.1.0",
     "react": "^18",
     "react-dom": "^18"
