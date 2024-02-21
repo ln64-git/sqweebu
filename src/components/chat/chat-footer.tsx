@@ -36,6 +36,7 @@ export default function ChatFooter() {
             }}
             className="p-2.5 w-full text-sm rounded-lg bg-zinc-950"
             rows={1}
+            spellCheck={true}
           ></textarea>
           <div className="flex items-center justify-center pr-2">
             <Image
