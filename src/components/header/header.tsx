@@ -9,7 +9,7 @@ export default function Header() {
 
   return (
     <div
-      className="fixed top-0 w-full pl-6 h-[40px] backdrop-blur-md z-10 flex justify-between items-center px-4"
+      className="sticky top-0 w-full pl-6 h-[40px] backdrop-blur-md z-10 flex justify-between items-center px-4"
       style={{ backdropFilter: "blur(10px)" }}
     >
       <div

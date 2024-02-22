@@ -42,7 +42,7 @@ export default function RootLayout({
       <body className={inter.className}>
         <MantineProvider theme={theme} defaultColorScheme="dark">
           <div style={{ backgroundColor }} className="flex flex-col h-screen">
-            <div className="flex-1 flex flex-col overflow-y-auto ">
+            <div className="flex-1 flex flex-col overflow-y-auto">
               <Header />
               <div className="flex flex-col items-center justify-center"></div>
               <div className="flex-1 w-full mx-auto overflow-y-auto">
