@@ -1,9 +1,11 @@
 "use client";
 
 import Image from "next/image";
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useState } from "react";
 import arrow from "../../public/chat/arrow_upward.svg";
 import mic from "../../public/chat/mic.svg";
+import useNexus from "@/store";
+import { useThemeColor } from "@/config/themes";
 
 export default function ChatFooter() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -33,8 +35,13 @@ export default function ChatFooter() {
     };
   }, [textareaRef]);
 
+  const backgroundColor = useThemeColor("background");
+
   return (
-    <div className="w-full bg-zinc-900 bg-opacity-60 px-1">
+    <div
+      style={{ backgroundColor }}
+      className="w-full bg-zinc-900 bg-opacity-60 px-1"
+    >
       <div className="max-w-xl mx-auto pt-1.5 pb-2 pl-2 flex">
         <div className="bg-zinc-950 rounded-md w-full flex justify-between">
           <textarea

@@ -13,7 +13,7 @@ export default function BurgerButton() {
   };
 
   return (
-    <div className="flex items-center pl-[2.6px]">
+    <div className="flex opacity-100 fixed top-0 left-0 pl-4 pt-1.5 items-center">
       <Burger
         opened={opened}
         onClick={handleClick}

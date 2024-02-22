@@ -1,8 +1,26 @@
+import useNexus from "@/store";
+import { useEffect, useState } from "react";
+
 export interface Theme {
   background: string;
   input: string;
   overlay: string;
   accent: string;
+}
+
+export function useThemeColor(colorType: keyof Theme): string {
+  const darkMode = useNexus((state) => state.darkMode);
+  const lightTheme = useNexus((state) => state.lightTheme);
+  const darkTheme = useNexus((state) => state.darkTheme);
+
+  const [themeColor, setThemeColor] = useState<string>("");
+
+  useEffect(() => {
+    const currentTheme = darkMode ? darkTheme : lightTheme;
+    setThemeColor(darkMode ? currentTheme[colorType] : currentTheme[colorType]);
+  }, [darkMode, lightTheme, darkTheme, colorType]);
+
+  return themeColor;
 }
 
 export const defaultLightTheme = {
@@ -13,9 +31,9 @@ export const defaultLightTheme = {
 };
 
 export const defaultDarkTheme: Theme = {
-  background: "bg-zinc-900",
+  background: "#18181b",
   input: "#000000",
-  overlay: "#000000",
+  overlay: "#09090b",
   accent: "#000000",
 };
 

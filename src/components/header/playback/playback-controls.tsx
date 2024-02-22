@@ -1,4 +1,4 @@
-"use client"
+"use client";
 import React, { useState } from "react";
 import StopButton from "./stop-button";
 import RewindButton from "./rewind-button";
@@ -19,7 +19,7 @@ const PlaybackControls = () => {
   };
 
   return (
-    <div className="flex">
+    <div className="flex ">
       <StopButton onClick={() => {}} />
       <RewindButton onClick={() => {}} />
       <PlayButton isPlaying={isPlaying} onClick={togglePlay} />

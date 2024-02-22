@@ -15,7 +15,7 @@ export default function SideBar() {
   return (
     <>
       {sidebar && (
-        <div className="md:block w-16 bg-zinc-950 bg-opacity-60 flex flex-col justify-between">
+        <div className="mt-10 md:block min-w-[61px] bg-zinc-950 bg-opacity-60 flex flex-col justify-between">
           <div className="flex flex-col items-center gap-2 pt-3">
             <HoverableIcon src={chat} alt="chat" />
             <HoverableIcon src={model} alt="model" />

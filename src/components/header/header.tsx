@@ -1,11 +1,24 @@
-"use client"
+import React from "react";
 import PlaybackControls from "./playback/playback-controls";
 import CommandInput from "./command-input";
 import BurgerButton from "./burger-button";
+import { useThemeColor } from "@/config/themes";
 
 export default function Header() {
+  const backgroundColor = useThemeColor("overlay");
+
   return (
-    <div className="fixed top-0 h-[40px] w-full bg-zinc-950 bg-opacity-60 z-10 flex justify-between items-center  px-4">
+    <div
+      className="fixed top-0 w-full pl-6 h-[40px] backdrop-blur-md z-10 flex justify-between items-center px-4"
+      style={{ backdropFilter: "blur(10px)" }}
+    >
+      <div
+        className="absolute inset-0 opacity-60 pt-10 "
+        style={{
+          backgroundColor,
+          backdropFilter: "blur(10px)",
+        }}
+      />
       <BurgerButton />
       <CommandInput />
       <PlaybackControls />
