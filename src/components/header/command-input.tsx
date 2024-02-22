@@ -26,7 +26,7 @@ export default function CommandInput() {
 
   return (
     <AnimatePresence>
-      <div className="flex justify-center flex-grow pl-12">
+      <div className="flex justify-center flex-grow pl-[72px]">
         {!isMobile && (
           <motion.div
             initial={{ opacity: 0 }}
