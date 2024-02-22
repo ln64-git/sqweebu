@@ -17,7 +17,12 @@ export default function CommandInput() {
   };
 
   const inputColor = useThemeColor("input");
-  const backgroundColor = useThemeColor("background");
+  const textPrimary = useThemeColor("textPrimary");
+  const darkMode = useNexus((state) => state.darkMode);
+
+  var placeholderText = darkMode
+    ? "placeholder-zinc-500"
+    : "placeholder-zinc-950";
 
   return (
     <AnimatePresence>
@@ -28,14 +33,17 @@ export default function CommandInput() {
             animate={{ opacity: 1 }}
             transition={{ duration: 0.3 }}
             className={`w-full bg-opacity-80 rounded-md m-1 backdrop-blur-sm ${
-              isInputFocused ? "border" : ""
+              isInputFocused ? "border-stone-600 border" : ""
             }`}
-            style={isInputFocused ? { borderColor: backgroundColor } : {}}
+            // style={isInputFocused ? { borderColor: backgroundColor } : {}}
           >
             <input
               type="text"
-              style={{ backgroundColor: inputColor }}
-              className="w-full opacity-60 caret-transparent py-2 rounded-md px-4 text-xs bg-transparent text-zinc-500 placeholder-zinc-400 text-center backdrop-blur-lg placeholder-opacity-50 outline-none focus:outline-none"
+              style={{
+                backgroundColor: inputColor,
+                color: textPrimary,
+              }}
+              className={`w-full opacity-60 caret-transparent py-2 rounded-md px-4 text-xs   text-center outline-none focus:outline-none ${placeholderText}`}
               placeholder={isInputFocused ? "" : "Command"}
               onFocus={handleInputFocus}
               onBlur={handleInputBlur}

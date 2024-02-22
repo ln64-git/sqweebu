@@ -10,9 +10,9 @@ use app::_utils::ollama::speak_ollama;
 use app::_utils::playback;
 use std::sync::Arc;
 use tauri::Manager;
-use tauri::SystemTray;
-use tauri::SystemTrayEvent;
-use tauri::{CustomMenuItem, SystemTrayMenu, SystemTrayMenuItem};
+// use tauri::SystemTray;
+// use tauri::SystemTrayEvent;
+// use tauri::{CustomMenuItem, SystemTrayMenu, SystemTrayMenuItem};
 use tokio::sync::Mutex;
 use tokio::task;
 
@@ -20,14 +20,14 @@ use tokio::task;
 
 #[tokio::main]
 async fn main() {
-    let show = CustomMenuItem::new("show".to_string(), "Show");
-    let hide = CustomMenuItem::new("hide".to_string(), "Hide");
-    let quit = CustomMenuItem::new("quit".to_string(), "Quit");
-    let tray_menu = SystemTrayMenu::new()
-        .add_item(show)
-        .add_item(hide)
-        .add_item(quit);
-    let system_tray = SystemTray::new().with_menu(tray_menu);
+    // let show = CustomMenuItem::new("show".to_string(), "Show");
+    // let hide = CustomMenuItem::new("hide".to_string(), "Hide");
+    // let quit = CustomMenuItem::new("quit".to_string(), "Quit");
+    // let tray_menu = SystemTrayMenu::new()
+    //     .add_item(show)
+    //     .add_item(hide)
+    //     .add_item(quit);
+    // let system_tray = SystemTray::new().with_menu(tray_menu);
 
     let playback_send = playback::init_playback_channel().await;
 
@@ -36,8 +36,8 @@ async fn main() {
     }));
 
     tauri::Builder::default()
-        .system_tray(system_tray)
-        .on_system_tray_event(|app, event| handle_system_tray_event(app, event))
+        // .system_tray(system_tray)
+        // .on_system_tray_event(|app, event| handle_system_tray_event(app, event))
         .invoke_handler(tauri::generate_handler![
             speak_text_from_frontend,
             speak_ollama_from_frontend,
@@ -135,36 +135,36 @@ async fn fast_forward_playback_from_frontend(app: tauri::AppHandle) -> Result<()
 
 // endregion: --- Playback Commands
 
-fn handle_system_tray_event(app: &tauri::AppHandle, event: SystemTrayEvent) {
-    match event {
-        SystemTrayEvent::LeftClick {
-            position: _,
-            size: _,
-            ..
-        } => {
-            println!("system tray received a left click");
-        }
-        SystemTrayEvent::RightClick {
-            position: _,
-            size: _,
-            ..
-        } => {
-            println!("system tray received a right click");
-        }
-        SystemTrayEvent::MenuItemClick { id, .. } => match id.as_str() {
-            "quit" => {
-                std::process::exit(0);
-            }
-            "show" => {
-                let window = app.get_window("main").unwrap();
-                window.show().unwrap();
-            }
-            "hide" => {
-                let window = app.get_window("main").unwrap();
-                window.hide().unwrap();
-            }
-            _ => {}
-        },
-        _ => {}
-    }
-}
+// fn handle_system_tray_event(app: &tauri::AppHandle, event: SystemTrayEvent) {
+//     match event {
+//         SystemTrayEvent::LeftClick {
+//             position: _,
+//             size: _,
+//             ..
+//         } => {
+//             println!("system tray received a left click");
+//         }
+//         SystemTrayEvent::RightClick {
+//             position: _,
+//             size: _,
+//             ..
+//         } => {
+//             println!("system tray received a right click");
+//         }
+//         SystemTrayEvent::MenuItemClick { id, .. } => match id.as_str() {
+//             "quit" => {
+//                 std::process::exit(0);
+//             }
+//             "show" => {
+//                 let window = app.get_window("main").unwrap();
+//                 window.show().unwrap();
+//             }
+//             "hide" => {
+//                 let window = app.get_window("main").unwrap();
+//                 window.hide().unwrap();
+//             }
+//             _ => {}
+//         },
+//         _ => {}
+//     }
+// }

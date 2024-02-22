@@ -11,19 +11,9 @@
     "version": "0.1.0"
   },
   "tauri": {
-    "systemTray": {
-      "iconPath": "icons/icon.png",
-      "iconAsTemplate": true
-    },
+
     "allowlist": {
-      "clipboard": {
-        "all": true,
-        "writeText": true,
-        "readText": true
-      },
-      "globalShortcut": {
-        "all": true
-      },
+
       "all": false
     },
     "bundle": {

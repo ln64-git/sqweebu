@@ -54,7 +54,9 @@ export default function RootLayout({
                 <div className="flex h-full ">
                   <SideBar />
                   <div className="w-full h-full flex flex-col justify-between max-w-[580px] mx-auto">
-                    <div className="overflow-y-auto flex-1">{children}</div>
+                    <div className="overflow-y-auto flex-1">
+                      {children}
+                      </div>
                     <ChatFooter />
                   </div>
                 </div>

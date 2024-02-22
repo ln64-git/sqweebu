@@ -26,9 +26,9 @@ export function useThemeColor(colorType: keyof Theme): string {
 }
 
 export const defaultLightTheme: Theme = {
-  background: "#6c6c59",
-  input: "#ffffff",
-  overlay: "#ffffff",
+  background: "#a6a6a6",
+  input: "#929292",
+  overlay: "#656565",
   accent: "#ffffff",
   textPrimary: "#000000",
   textSecondary: "#313139",
