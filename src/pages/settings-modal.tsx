@@ -15,9 +15,9 @@ export default function SettingsModal() {
   }, [command, open, close]);
 
   return (
-    <div>
+    <div className="">
       <Modal opened={opened} onClose={close} title="Settings">
-        {/* Modal content */}
+        {/* Modal content */}awd
       </Modal>
     </div>
   );
