@@ -39,14 +39,13 @@ export default function ChatFooter() {
   const inputColor = useThemeColor("input");
   return (
     <div style={{ backgroundColor }} className="w-full bg-opacity-60 px-1">
-      <div className="max-w-xl mx-auto pt-1.5 pb-2 pl-2 flex">
+      <div className="max-w-[460px] mx-auto pt-1.5 pb-2  flex  ">
         <div
           style={{ backgroundColor: inputColor }}
-          className="bg-zinc-150 opacity-60 rounded-md w-full flex justify-between"
+          className="max-w-[420px] mx-auto  opacity-60 rounded-md w-full flex justify-between"
         >
           <textarea
             ref={textareaRef}
-            
             style={{
               resize: "none",
               overflow: "hidden",
@@ -54,7 +53,7 @@ export default function ChatFooter() {
               flex: "1",
               backgroundColor: inputColor,
             }}
-            className="p-2.5 w-full text-sm rounded-lg bg-zinc-950"
+            className="p-2.5 w-full text-sm rounded-lg bg-zinc-950 "
             rows={1}
             spellCheck={true}
             onKeyDown={handleEnterSubmit}
@@ -64,11 +63,11 @@ export default function ChatFooter() {
               src={arrow}
               width={30}
               alt="Arrow"
-              className="transition duration-300 ease-in-out hover:bg-zinc-900 rounded-md cursor-pointer"
+              className="transition duration-300 ease-in-out hover:bg-zinc-900 rounded-md cursor-pointer "
             />
           </div>
         </div>
-        <div className="flex justify-between mx-1 items-center">
+        <div className="flex justify-between mx-1 items-center ">
           <Image src={mic} width={40} alt="mic" />
         </div>
       </div>
