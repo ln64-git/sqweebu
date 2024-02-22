@@ -22,7 +22,7 @@ export default function SideBar() {
           style={{ backgroundColor: overlayColor }} // Corrected usage of overlayColor
           className="md:block min-w-[61px] opacity-60 flex flex-col justify-between"
         >
-          <div className="flex flex-col items-center gap-2 pt-3">
+          <div className="flex flex-col items-center gap-3 pt-3.5">
             <HoverableIcon src={chat} alt="chat" />
             <HoverableIcon src={model} alt="model" />
             <HoverableIcon src={person} alt="person" />
