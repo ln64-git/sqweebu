@@ -1,7 +1,14 @@
+import { useThemeColor } from "@/config/themes";
 import React from "react";
 
 export default function ResponseMessage() {
-  return <div className="mx-2 my-2 mb-8 text-sm ">{words}</div>;
+  const textPrimary = useThemeColor("textPrimary");
+
+  return (
+    <div style={{ color: textPrimary }} className="mx-2 my-2 mb-8 text-sm ">
+      {words}
+    </div>
+  );
 }
 
 let words =

@@ -1,21 +1,27 @@
-"use client";
+import React from "react";
+import { HTMLAttributes } from "react";
+import HoverableIcon from "@/utils/hoverable-icon";
+import LightSwitch from "./light-switch";
+import useNexus from "@/store";
+import { useThemeColor } from "@/config/themes";
 import settings from "../../../public/sidebar/settings.svg";
 import keyboard from "../../../public/sidebar/keyboard.svg";
 import command from "../../../public/sidebar/command.svg";
 import person from "../../../public/sidebar/person.svg";
 import model from "../../../public/sidebar/model.svg";
 import chat from "../../../public/sidebar/chat.svg";
-import HoverableIcon from "@/utils/hoverable-icon";
-import LightSwitch from "./light-switch";
-import useNexus from "@/store";
 
 export default function SideBar() {
   const sidebar = useNexus((state) => state.sidebar);
+  const overlayColor = useThemeColor("overlay");
 
   return (
     <>
       {sidebar && (
-        <div className=" md:block min-w-[61px] bg-zinc-950 bg-opacity-60 flex flex-col justify-between">
+        <div
+          style={{ backgroundColor: overlayColor }} // Corrected usage of overlayColor
+          className="md:block min-w-[61px] opacity-60 flex flex-col justify-between"
+        >
           <div className="flex flex-col items-center gap-2 pt-3">
             <HoverableIcon src={chat} alt="chat" />
             <HoverableIcon src={model} alt="model" />

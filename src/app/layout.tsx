@@ -19,8 +19,6 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const backgroundColor = useThemeColor("background");
-
   useEffect(() => {
     // Add top margin to the scrollbar
     const style = document.createElement("style");
@@ -37,18 +35,25 @@ export default function RootLayout({
     };
   }, []);
 
+  const backgroundColor = useThemeColor("background");
+
+  const textPrimary = useThemeColor("textPrimary");
+
   return (
     <html lang="en">
       <body className={inter.className}>
         <MantineProvider theme={theme} defaultColorScheme="dark">
-          <div style={{ backgroundColor }} className="flex flex-col h-screen">
-            <div className="flex-1 flex flex-col overflow-y-auto">
+          <div
+            style={{ backgroundColor, color: textPrimary }}
+            className="flex flex-col h-screen "
+          >
+            <div className="flex-1 flex flex-col overflow-y-auto items-center justify-center ">
               <Header />
               <div className="flex flex-col items-center justify-center"></div>
               <div className="flex-1 w-full mx-auto overflow-y-auto">
-                <div className="flex h-full">
+                <div className="flex h-full ">
                   <SideBar />
-                  <div className="w-full h-full flex flex-col justify-between">
+                  <div className="w-full h-full flex flex-col justify-between max-w-[580px] mx-auto">
                     <div className="overflow-y-auto flex-1">{children}</div>
                     <ChatFooter />
                   </div>

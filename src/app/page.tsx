@@ -21,7 +21,7 @@ export default function Home() {
 
   return (
     <div className="flex h-full overflow-y-auto  ">
-      <div className="flex-1 px-4 text-zinc-400 mt-1.5">
+      <div className="flex-1 px-4 text-zinc-400 mt-1.5 ">
         <ChatMessage />
         <Divider />
         <ResponseMessage />

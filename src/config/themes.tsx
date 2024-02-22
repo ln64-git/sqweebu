@@ -6,6 +6,8 @@ export interface Theme {
   input: string;
   overlay: string;
   accent: string;
+  textPrimary: string;
+  textSecondary: string;
 }
 
 export function useThemeColor(colorType: keyof Theme): string {
@@ -23,11 +25,13 @@ export function useThemeColor(colorType: keyof Theme): string {
   return themeColor;
 }
 
-export const defaultLightTheme = {
-  background: "#797974",
+export const defaultLightTheme: Theme = {
+  background: "#6c6c59",
   input: "#ffffff",
   overlay: "#ffffff",
   accent: "#ffffff",
+  textPrimary: "#000000",
+  textSecondary: "#313139",
 };
 
 export const defaultDarkTheme: Theme = {
@@ -35,6 +39,8 @@ export const defaultDarkTheme: Theme = {
   input: "#000000",
   overlay: "#09090b",
   accent: "#000000",
+  textPrimary: "#677663",
+  textSecondary: "#65658f",
 };
 
 export const ubuntuTheme: Theme = {
@@ -42,6 +48,8 @@ export const ubuntuTheme: Theme = {
   input: "#dd4814",
   overlay: "#dd4814",
   accent: "#dd4814",
+  textPrimary: "#ffffff",
+  textSecondary: "#09090b",
 };
 
 export const draculaTheme: Theme = {
@@ -49,4 +57,6 @@ export const draculaTheme: Theme = {
   input: "#282a36",
   overlay: "#282a36",
   accent: "#282a36",
+  textPrimary: "#ffffff",
+  textSecondary: "#09090b",
 };

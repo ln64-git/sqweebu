@@ -36,21 +36,23 @@ export default function ChatFooter() {
   }, [textareaRef]);
 
   const backgroundColor = useThemeColor("background");
-
+  const inputColor = useThemeColor("input");
   return (
-    <div
-      style={{ backgroundColor }}
-      className="w-full bg-zinc-900 bg-opacity-60 px-1"
-    >
+    <div style={{ backgroundColor }} className="w-full bg-opacity-60 px-1">
       <div className="max-w-xl mx-auto pt-1.5 pb-2 pl-2 flex">
-        <div className="bg-zinc-950 rounded-md w-full flex justify-between">
+        <div
+          style={{ backgroundColor: inputColor }}
+          className="bg-zinc-150 opacity-60 rounded-md w-full flex justify-between"
+        >
           <textarea
             ref={textareaRef}
+            
             style={{
               resize: "none",
               overflow: "hidden",
               outline: "none",
               flex: "1",
+              backgroundColor: inputColor,
             }}
             className="p-2.5 w-full text-sm rounded-lg bg-zinc-950"
             rows={1}
