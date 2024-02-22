@@ -7,17 +7,20 @@ interface Nexus {
   darkMode: boolean;
   lightTheme: Theme;
   darkTheme: Theme;
+  command: string;
   setMobile: (isMobile: boolean) => void;
   setSidebar: (sidebar: boolean) => void;
   setDarkMode: (sidebar: boolean) => void;
   setLightTheme: (theme: Partial<Theme>) => void;
   setDarkTheme: (theme: Partial<Theme>) => void;
+  flashCommand: (command: string) => void;
 }
 
 const useNexus = create<Nexus>((set) => ({
   isMobile: true,
   sidebar: false,
   darkMode: true,
+  command: "",
   lightTheme: defaultLightTheme,
   darkTheme: defaultDarkTheme,
   setMobile: (isMobile) => set((state) => ({ ...state, isMobile })),
@@ -30,6 +33,12 @@ const useNexus = create<Nexus>((set) => ({
     })),
   setDarkTheme: (theme) =>
     set((state) => ({ ...state, darkTheme: { ...state.darkTheme, ...theme } })),
+  flashCommand: (command) => {
+    set((state) => ({ ...state, command }));
+    setTimeout(() => {
+      set((state) => ({ ...state, command: "" }));
+    }, 1000); // Reset state after 1 second
+  },
 }));
 
 export default useNexus;

@@ -11,6 +11,12 @@ import SideBar from "@/components/sidebar/sidebar";
 import Header from "@/components/header/header";
 import ChatFooter from "@/components/footer";
 import { useThemeColor } from "@/config/themes";
+import SettingsModal from "@/pages/settings-modal";
+import ChatModal from "@/pages/chat-modal ";
+import ModelModal from "@/pages/model-modal";
+import CommandModal from "@/pages/command-modal ";
+import KeyboardModal from "@/pages/keyboard-modal ";
+import VoiceModal from "@/pages/voice-modal ";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -43,6 +49,12 @@ export default function RootLayout({
     <html lang="en">
       <body className={inter.className}>
         <MantineProvider theme={theme} defaultColorScheme="dark">
+          <SettingsModal />
+          <ChatModal />
+          <ModelModal />
+          <VoiceModal />
+          <KeyboardModal />
+          <CommandModal />
           <div
             style={{ backgroundColor, color: textPrimary }}
             className="flex flex-col h-screen "
@@ -54,9 +66,7 @@ export default function RootLayout({
                 <div className="flex h-full ">
                   <SideBar />
                   <div className="w-full h-full flex flex-col justify-between max-w-[580px] mx-auto">
-                    <div className="overflow-y-auto flex-1">
-                      {children}
-                      </div>
+                    <div className="overflow-y-auto flex-1 ">{children}</div>
                     <ChatFooter />
                   </div>
                 </div>

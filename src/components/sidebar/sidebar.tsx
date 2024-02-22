@@ -7,9 +7,10 @@ import { useThemeColor } from "@/config/themes";
 import settings from "../../../public/sidebar/settings.svg";
 import keyboard from "../../../public/sidebar/keyboard.svg";
 import command from "../../../public/sidebar/command.svg";
-import person from "../../../public/sidebar/person.svg";
+import voice from "../../../public/sidebar/voice.svg";
 import model from "../../../public/sidebar/model.svg";
 import chat from "../../../public/sidebar/chat.svg";
+import home from "../../../public/sidebar/home.svg";
 
 export default function SideBar() {
   const sidebar = useNexus((state) => state.sidebar);
@@ -25,7 +26,7 @@ export default function SideBar() {
           <div className="flex flex-col items-center gap-3 pt-3.5">
             <HoverableIcon src={chat} alt="chat" />
             <HoverableIcon src={model} alt="model" />
-            <HoverableIcon src={person} alt="person" />
+            <HoverableIcon src={voice} alt="voice" />
             <HoverableIcon src={command} alt="command" />
             <HoverableIcon src={keyboard} alt="keyboard" />
             <HoverableIcon src={settings} alt="settings" />

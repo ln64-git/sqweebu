@@ -5,7 +5,7 @@ import ChatMessage from "@/components/chat/chat-message";
 import ResponseMessage from "@/components/chat/chat-response-message";
 import Header from "@/components/header/header";
 
-export default function Home() {
+export default function HomePage() {
   const [isMobile, setIsMobile] = useState(false);
   const setMobile = useNexus((state) => state.setMobile);
 
