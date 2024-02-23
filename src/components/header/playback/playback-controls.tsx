@@ -18,7 +18,7 @@ const PlaybackControls = () => {
   };
 
   return (
-    <div className="flex px-4 w-[156px] fixed right-0">
+    <div className="flex px-4 w-[156px] fixed right-0 h-[40px]">
       <StopButton onClick={() => {}} />
       <RewindButton onClick={() => {}} />
       <PlayButton isPlaying={isPlaying} onClick={togglePlay} />

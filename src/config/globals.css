@@ -13,3 +13,9 @@
   /* Other scrollbar styles */
   /* z-index: 999; /* Adjust the value as needed */
 }
+
+.scrollbox {
+  overflow: auto;
+  clip-path: inset(0 0 0 0);
+  /* overflow: initial; */
+}

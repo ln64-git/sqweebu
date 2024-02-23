@@ -1,11 +1,8 @@
 "use client";
-import { useEffect } from "react";
 import { Inter } from "next/font/google";
 import "../config/globals.css";
 import theme from "../config/mantine-theme";
-
 import "@mantine/core/styles.css";
-
 import { MantineProvider } from "@mantine/core";
 import SideBar from "@/components/sidebar/sidebar";
 import Header from "@/components/header/header";
@@ -26,24 +23,7 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  useEffect(() => {
-    // Add top margin to the scrollbar
-    const style = document.createElement("style");
-    style.innerHTML = `
-      ::-webkit-scrollbar {
-        margin-top: 20px; /* Adjust this value to fit your header height */
-      }
-    `;
-    document.head.appendChild(style);
-
-    return () => {
-      // Clean up the style tag when component unmounts
-      document.head.removeChild(style);
-    };
-  }, []);
-
   const backgroundColor = useThemeColor("background");
-
   const textPrimary = useThemeColor("textPrimary");
 
   return (

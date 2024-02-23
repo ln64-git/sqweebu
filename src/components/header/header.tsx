@@ -5,23 +5,30 @@ import BurgerButton from "./burger-button";
 import { useThemeColor } from "@/config/themes";
 
 export default function Header() {
-  const backgroundColor = useThemeColor("overlay");
+  const overlayColor = useThemeColor("overlay");
 
   return (
-    <div
-      className="sticky top-0 w-full  h-[40px] backdrop-blur-md z-10 flex justify-between items-center "
-      style={{ backdropFilter: "blur(10px)" }}
-    >
+    <div className="flex w-full  ">
+      <div className="sticky top-0 w-full z-10 flex justify-between items-center">
+        <div
+          className="absolute inset-0 backdrop-blur-md opacity-60 h-full"
+          style={{
+            backdropFilter: "blur(10px)",
+            backgroundColor: overlayColor,
+          }}
+        />
+        <BurgerButton />
+        <CommandInput />
+        <PlaybackControls />
+      </div>
       <div
-        className="absolute inset-0 opacity-60 pt-10 "
         style={{
-          backgroundColor,
+          background: overlayColor,
           backdropFilter: "blur(10px)",
+          opacity: 0.6,
         }}
-      />
-      <BurgerButton />
-      <CommandInput />
-      <PlaybackControls />
+        className="pr-4 "
+      ></div>
     </div>
   );
 }

@@ -27,7 +27,7 @@ export default function CommandInput() {
 
   return (
     <AnimatePresence>
-      <div className="flex justify-center flex-grow pl-[72px] pr-[145px]">
+      <div className="flex h-full justify-center flex-grow pl-[72px] pr-[145px]">
         {!showCommandInput && (
           <motion.div
             initial={{ opacity: 0 }}
@@ -44,7 +44,7 @@ export default function CommandInput() {
                 backgroundColor: inputColor,
                 color: textPrimary,
               }}
-              className={`w-full opacity-60 caret-transparent py-2 rounded-md px-4 text-xs   text-center outline-none focus:outline-none ${placeholderText}`}
+              className={`w-full opacity-90 caret-transparent py-2 rounded-md px-4 text-xs   text-center outline-none focus:outline-none ${placeholderText}`}
               placeholder={isInputFocused ? "" : "Command"}
               onFocus={handleInputFocus}
               onBlur={handleInputBlur}

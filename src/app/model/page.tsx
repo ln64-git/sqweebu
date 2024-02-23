@@ -1,7 +1,6 @@
 "use client";
 import { Table } from "@mantine/core";
 import React from "react";
-import { Divider } from "../page";
 
 const elements = [
   { position: 1, name: "Hydrogen", symbol: "H", mass: 1.008 },
@@ -22,7 +21,7 @@ export default function ModelsPage() {
   return (
     <div className=" h-full p-4  flex flex-col max-w-[450px] mx-auto overflow-y-auto">
       <div className=" pb-2 pl-4">Select available ollama models ~</div>
-      {/* <Divider /> */}
+
       <div className=" flex h-full">
         <div>
           <Table>

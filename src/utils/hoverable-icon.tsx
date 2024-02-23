@@ -13,7 +13,6 @@ const HoverableIcon: React.FC<HoverableIconProps> = ({ src, alt, size }) => {
   const flashCommand = useNexus((state) => state.flashCommand);
 
   const handleClick = () => {
-    console.log(alt);
     flashCommand(alt);
   };
 
