@@ -36,7 +36,7 @@ export default function SideBar() {
       {sidebar && (
         <div
           style={{ backgroundColor: overlayColor }}
-          className="md:block min-w-[61px] opacity-60 flex flex-col justify-between"
+          className="md:block min-w-[61px] opacity-60 flex flex-col justify-between mt-[40px]"
         >
           <div className="flex flex-col justify-between items-center pt-2.5 h-full">
             <div className="flex flex-col justify-center items-center gap-3 w-full h-[134px] pb-[20px]">

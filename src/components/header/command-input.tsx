@@ -26,13 +26,13 @@ export default function CommandInput() {
 
   return (
     <AnimatePresence>
-      <div className="flex justify-center flex-grow pl-[72px]">
+      <div className="flex justify-center flex-grow pl-[72px] pr-[145px]">
         {!isMobile && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.3 }}
-            className={`w-full bg-opacity-80 rounded-md m-1 backdrop-blur-sm ${
+            className={`w-full  rounded-md m-1  ${
               isInputFocused ? "border-stone-600 border" : ""
             }`}
             // style={isInputFocused ? { borderColor: backgroundColor } : {}}
