@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import useNexus from "@/store";
 import { useThemeColor } from "@/config/themes";
-import { Divider } from "@mantine/core";
 
 export default function CommandInput() {
   const viewWidth = useNexus((state) => state.viewWidth);
@@ -52,9 +51,21 @@ export default function CommandInput() {
                   style={{ backgroundColor: inputColor, color: textPrimary }}
                   className="text-xs backdrop-blur-md opacity-60 p-2 pl-4 pr-2 rounded-b-md"
                 >
-                  <div className="mb-2">Speak Clipboard</div>
-                  <div className="mb-2">Speak System Monitor</div>
-                  <div className="mb-2">Copy Response to clipboard</div>
+                  <CommandBlock
+                    overlayColor={overlayColor}
+                    alt="speak_clipboard"
+                    label="Speak Clipboard"
+                  />
+                  <CommandBlock
+                    overlayColor={overlayColor}
+                    alt="speak_system_monitor"
+                    label="Speak System Monitor"
+                  />
+                  <CommandBlock
+                    overlayColor={overlayColor}
+                    alt="copy_response_to_clipboard"
+                    label="Copy Response to clipboard"
+                  />
                 </div>
               </>
             )}
@@ -62,5 +73,32 @@ export default function CommandInput() {
         )}
       </div>
     </AnimatePresence>
+  );
+}
+
+interface CommandBlockProps {
+  overlayColor: string;
+  alt: string;
+  label: string;
+}
+
+function CommandBlock({ overlayColor, alt, label }: CommandBlockProps) {
+  const flashCommand = useNexus((state) => state.flashCommand);
+  function handleClick() {
+    flashCommand(alt);
+  }
+  return (
+    <div className="mb-2 relative">
+      <div className="p-1 rounded-sm group cursor-pointer ">
+        <div
+          onClick={handleClick}
+          style={{ background: overlayColor }}
+          className="invisible absolute left-0 top-0 w-full p-1 rounded-sm transition-opacity duration-300 group-hover:visible"
+        >
+          {label}
+        </div>
+        <div className="opacity-100">{label}</div>
+      </div>
+    </div>
   );
 }
