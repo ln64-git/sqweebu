@@ -13,7 +13,6 @@ export default function Header() {
         <div
           className="absolute inset-0 backdrop-blur-md opacity-60 h-full"
           style={{
-            backdropFilter: "blur(10px)",
             backgroundColor: overlayColor,
           }}
         />
