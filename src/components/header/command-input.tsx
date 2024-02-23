@@ -29,14 +29,14 @@ export default function CommandInput() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.3 }}
-            className="w-full rounded-md m-1"
+            className="w-full rounded-md m-1 "
           >
             <input
               type="text"
               style={{ backgroundColor: inputColor, color: textPrimary }}
               className={`w-full opacity-40 ${
                 isInputFocused ? "rounded-t-md" : "rounded-md"
-              } caret-transparent py-2 px-4 text-xs  outline-none focus:outline-none ${placeholderText}`}
+              }  py-2 px-5 text-xs  outline-none focus:outline-none ${placeholderText}`}
               placeholder={isInputFocused ? "" : "Command"}
               onFocus={handleInputFocus}
               onBlur={handleInputBlur}
@@ -45,11 +45,11 @@ export default function CommandInput() {
               <>
                 <div
                   style={{ backgroundColor: inputColor }}
-                  className="backdrop-blur-lg opacity-60 pt-[4px]"
+                  className="backdrop-blur-lg opacity-[.45] pt-[4px]"
                 />
                 <div
                   style={{ backgroundColor: inputColor, color: textPrimary }}
-                  className="text-xs backdrop-blur-md opacity-60 p-2 pl-4 pr-2 rounded-b-md"
+                  className="text-xs backdrop-blur-md opacity-[.70] p-2 pl-4 pr-2 rounded-b-md"
                 >
                   <CommandBlock
                     overlayColor={overlayColor}
