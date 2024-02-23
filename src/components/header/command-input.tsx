@@ -93,7 +93,7 @@ function CommandBlock({ overlayColor, alt, label }: CommandBlockProps) {
         <div
           onClick={handleClick}
           style={{ background: overlayColor }}
-          className="invisible absolute left-0 top-0 w-full p-1 rounded-sm transition-opacity duration-300 group-hover:visible"
+          className="invisible absolute left-0 top-0 w-full p-1 py-[5px] rounded-[4px] transition-opacity duration-300 group-hover:visible"
         >
           {label}
         </div>
