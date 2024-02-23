@@ -5,13 +5,15 @@ import useNexus from "@/store";
 interface HoverableIconProps {
   src: string;
   alt: string;
+  size?: number;
 }
 
-const HoverableIcon: React.FC<HoverableIconProps> = ({ src, alt }) => {
+const HoverableIcon: React.FC<HoverableIconProps> = ({ src, alt, size }) => {
   const [isHovered, setIsHovered] = useState(false);
   const flashCommand = useNexus((state) => state.flashCommand);
 
   const handleClick = () => {
+    console.log(alt);
     flashCommand(alt);
   };
 
@@ -28,16 +30,30 @@ const HoverableIcon: React.FC<HoverableIconProps> = ({ src, alt }) => {
     cursor: "pointer",
   };
 
-  return (
-    <Image
-      src={src}
-      alt={alt}
-      onMouseEnter={handleHover}
-      onMouseLeave={handleMouseLeave}
-      onClick={handleClick}
-      style={imageStyle}
-    />
-  );
+  if (size) {
+    return (
+      <Image
+        src={src}
+        alt={alt}
+        onMouseEnter={handleHover}
+        onMouseLeave={handleMouseLeave}
+        onClick={handleClick}
+        style={imageStyle}
+        width={size}
+      />
+    );
+  } else {
+    return (
+      <Image
+        src={src}
+        alt={alt}
+        onMouseEnter={handleHover}
+        onMouseLeave={handleMouseLeave}
+        onClick={handleClick}
+        style={imageStyle}
+      />
+    );
+  }
 };
 
 export default HoverableIcon;

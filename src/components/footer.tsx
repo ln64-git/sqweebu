@@ -6,6 +6,7 @@ import arrow from "../../public/chat/arrow_upward.svg";
 import mic from "../../public/chat/mic.svg";
 import useNexus from "@/store";
 import { useThemeColor } from "@/config/themes";
+import IconButton from "@/utils/icon-button";
 
 export default function ChatFooter() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -59,16 +60,14 @@ export default function ChatFooter() {
             onKeyDown={handleEnterSubmit}
           ></textarea>
           <div className="flex items-center justify-center pr-2">
-            <Image
-              src={arrow}
-              width={30}
-              alt="Arrow"
-              className="transition duration-300 ease-in-out hover:bg-zinc-900 rounded-md cursor-pointer "
-            />
+            <div className="transition duration-300 ease-in-out hover:bg-zinc-900 rounded-md cursor-pointer flex ">
+              <IconButton icon={{ src: arrow, alt: "arrow", size: 30 }} />
+            </div>
+            {/* <Image src={arrow} width={30} alt="Arrow" /> */}
           </div>
         </div>
-        <div className="flex justify-between mx-1 items-center ">
-          <Image src={mic} width={40} alt="mic" />
+        <div className="flex justify-between mx-1 items-center cursor-pointer">
+          <IconButton icon={{ src: mic, alt: "mic", size: 40 }} />
         </div>
       </div>
     </div>
