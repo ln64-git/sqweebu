@@ -8,6 +8,8 @@
   --background-end-rgb: 255, 255, 255;
 }
 
+/* Enable custom scrollbar styling */
 ::-webkit-scrollbar {
-  position: absolute;
+  /* Other scrollbar styles */
+  /* z-index: 999; /* Adjust the value as needed */
 }

@@ -17,6 +17,7 @@ import ModelModal from "@/pages/model-modal";
 import CommandModal from "@/pages/command-modal ";
 import KeyboardModal from "@/pages/keyboard-modal ";
 import VoiceModal from "@/pages/voice-modal ";
+import GetViewSize from "@/utils/get-view-size";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -48,6 +49,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
+        <GetViewSize />
         <MantineProvider theme={theme} defaultColorScheme="dark">
           <SettingsModal />
           <ChatModal />
@@ -59,16 +61,14 @@ export default function RootLayout({
             style={{ backgroundColor, color: textPrimary }}
             className="flex flex-col h-screen "
           >
-            <div className="flex-1 flex flex-col overflow-y-auto items-center justify-center ">
+            <div className="flex-1 flex flex-col items-center justify-center ">
               <Header />
               <div className="flex flex-col items-center justify-center"></div>
-              <div className="flex-1 w-full mx-auto overflow-y-auto">
+              <div className="flex-1 w-full mx-auto">
                 <div className="flex h-full fixed left-0 right-0 bottom-0 ">
                   <SideBar />
                   <div className="w-full h-full flex flex-col justify-between max-w-[580px]  mx-auto">
-                    <div className="overflow-y-auto flex-1  ">
-                      {children}
-                    </div>
+                    <div className="overflow-y-auto flex-1  ">{children}</div>
                     <ChatFooter />
                   </div>
                 </div>

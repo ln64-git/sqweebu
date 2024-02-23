@@ -66,7 +66,8 @@ pub async fn ollama_generate_api(
 ) -> Result<(), Box<dyn Error>> {
     let client = reqwest::Client::new();
     let request_body = GenerateRequest {
-        model: "llama2-uncensored".to_string(),
+        model: "dolphin-mixtral".to_string(),
+        // model: "llama2-uncensored".to_string(),
         prompt: final_prompt,
         stream: true,
     };

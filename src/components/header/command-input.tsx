@@ -5,7 +5,8 @@ import useNexus from "@/store";
 import { useThemeColor } from "@/config/themes";
 
 export default function CommandInput() {
-  const isMobile = useNexus((state) => state.isMobile);
+  const viewWidth = useNexus((state) => state.viewWidth);
+  const showCommandInput = viewWidth < 350;
   const [isInputFocused, setIsInputFocused] = useState(false);
 
   const handleInputFocus = () => {
@@ -27,7 +28,7 @@ export default function CommandInput() {
   return (
     <AnimatePresence>
       <div className="flex justify-center flex-grow pl-[72px] pr-[145px]">
-        {!isMobile && (
+        {!showCommandInput && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}

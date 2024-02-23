@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import { HTMLAttributes } from "react";
 import HoverableIcon from "@/utils/hoverable-icon";
 import LightSwitch from "./light-switch";
 import useNexus from "@/store";
@@ -14,22 +13,17 @@ import add from "../../../public/sidebar/add.svg";
 
 export default function SideBar() {
   const sidebar = useNexus((state) => state.sidebar);
-  const overlayColor = useThemeColor("overlay");
+  const viewHeight = useNexus((state) => state.viewHeight);
 
   const [isShortViewport, setIsShortViewport] = useState(false);
   const [isShorterViewport, setIsShorterViewport] = useState(false);
 
   useEffect(() => {
-    function handleResize() {
-      const windowHeight = window.innerHeight;
-      setIsShortViewport(windowHeight < 400);
-      setIsShorterViewport(windowHeight < 300);
-    }
+    setIsShorterViewport(viewHeight < 325); // Adjust the threshold as needed
+    setIsShortViewport(viewHeight < 350);
+  }, [viewHeight]);
 
-    window.addEventListener("resize", handleResize);
-    handleResize();
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
+  const overlayColor = useThemeColor("overlay");
 
   return (
     <>
@@ -48,10 +42,10 @@ export default function SideBar() {
               </>
             </div>
             <div className="flex flex-col justify-between items-center gap-3 w-full p-2  ">
-              <div className={!isShortViewport ? "block" : "hidden"}>
+              <div className={!isShortViewport ? "" : "hidden"}>
                 <HoverableIcon src={command} alt="command" />
               </div>
-              <div className={!isShorterViewport ? "block" : "hidden"}>
+              <div className={!isShorterViewport ? "" : "hidden"}>
                 <HoverableIcon src={keyboard} alt="keyboard" />
               </div>
               <div className="h-[22px]">
