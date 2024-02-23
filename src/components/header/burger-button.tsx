@@ -11,12 +11,13 @@ export default function BurgerButton() {
     setSidebar(!opened);
     toggle();
   };
-
   return (
-    <div className="flex opacity-100 fixed top-0 left-0 pl-4 pt-1.5 items-center">
+    <div
+      onClick={handleClick}
+      className="sticky top-0 left-0 z-50 h-[40px]  justify-center w-[60px] pt-[4px] pl-[16.8px] items-center cursor-pointer"
+    >
       <Burger
         opened={opened}
-        onClick={handleClick}
         aria-label="Toggle navigation"
         size={"sm"}
         color="dark"

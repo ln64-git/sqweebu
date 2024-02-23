@@ -27,7 +27,7 @@ export default function Header() {
           backdropFilter: "blur(10px)",
           opacity: 0.6,
         }}
-        className="pr-4 "
+        className="w-[18px] right-0"
       ></div>
     </div>
   );

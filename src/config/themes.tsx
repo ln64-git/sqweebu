@@ -39,7 +39,7 @@ export const defaultDarkTheme: Theme = {
   input: "#000000",
   overlay: "#09090b",
   accent: "#000000",
-  textPrimary: "#677663",
+  textPrimary: "#717571",
   textSecondary: "#65658f",
 };
 

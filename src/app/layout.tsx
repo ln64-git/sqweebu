@@ -45,10 +45,10 @@ export default function RootLayout({
               <Header />
               <div className="flex flex-col items-center justify-center"></div>
               <div className="flex-1 w-full mx-auto">
-                <div className="flex h-full fixed left-0 right-0 bottom-0 ">
+                <div className="flex h-full fixed left-0 right-0  bottom-0 ">
                   <SideBar />
-                  <div className="w-full h-full flex flex-col justify-between max-w-[580px]  mx-auto">
-                    <div className="overflow-y-auto flex-1  ">{children}</div>
+                  <div className=" h-full flex flex-col  w-full justify-between   mx-auto">
+                    <div className="overflow-y-auto flex-1">{children}</div>
                     <ChatFooter />
                   </div>
                 </div>

@@ -25,33 +25,35 @@ export default function CommandInput() {
     ? "placeholder-zinc-500"
     : "placeholder-zinc-950";
 
-  return (
-    <AnimatePresence>
-      <div className="flex h-full justify-center flex-grow pl-[72px] pr-[145px]">
-        {!showCommandInput && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.3 }}
-            className={`w-full  rounded-md m-1  ${
-              isInputFocused ? "border-stone-600 border" : ""
-            }`}
-            // style={isInputFocused ? { borderColor: backgroundColor } : {}}
-          >
-            <input
-              type="text"
-              style={{
-                backgroundColor: inputColor,
-                color: textPrimary,
-              }}
-              className={`w-full opacity-90 caret-transparent py-2 rounded-md px-4 text-xs   text-center outline-none focus:outline-none ${placeholderText}`}
-              placeholder={isInputFocused ? "" : "Command"}
-              onFocus={handleInputFocus}
-              onBlur={handleInputBlur}
-            />
-          </motion.div>
-        )}
-      </div>
-    </AnimatePresence>
-  );
+  if (viewWidth > 320) {
+    return (
+      <AnimatePresence>
+        <div className="flex h-full justify-center flex-grow pl-[12px] pr-[145px] ">
+          {!showCommandInput && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.3 }}
+              className={`w-full  rounded-md m-1  ${
+                isInputFocused ? "border-stone-600 border" : ""
+              }`}
+              // style={isInputFocused ? { borderColor: backgroundColor } : {}}
+            >
+              <input
+                type="text"
+                style={{
+                  backgroundColor: inputColor,
+                  color: textPrimary,
+                }}
+                className={`w-full opacity-40 caret-transparent py-2 rounded-md px-4 text-xs   text-center outline-none focus:outline-none ${placeholderText}`}
+                placeholder={isInputFocused ? "" : "Command"}
+                onFocus={handleInputFocus}
+                onBlur={handleInputBlur}
+              />
+            </motion.div>
+          )}
+        </div>
+      </AnimatePresence>
+    );
+  }
 }

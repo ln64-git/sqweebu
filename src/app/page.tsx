@@ -10,10 +10,10 @@ export default function HomePage() {
   const viewWidth = useNexus((state) => state.viewWidth);
 
   return (
-    <div className="flex h-full mt-10">
+    <div className="flex h-full mt-10 ">
       <div className="flex-1 px-4 text-zinc-400 mt-1.5 gap-2">
         <ChatMessage />
-        <div className="bg-red-900 my-4 ">
+        <div className=" my-4 ">
           <Divider />
         </div>
         <ResponseMessage />
