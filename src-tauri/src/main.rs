@@ -5,9 +5,12 @@
 
 use app::AppState;
 use app::PlaybackCommand;
+use app::UserSettings;
 use app::_utils::_api::azure::speak_text;
 use app::_utils::_api::ollama::speak_ollama;
 use app::_utils::playback;
+use app::_utils::user_settings::get_user_settings_path;
+use app::_utils::user_settings::load_user_settings;
 use std::sync::Arc;
 use tauri::Manager;
 // use tauri::SystemTray;
@@ -31,8 +34,19 @@ async fn main() {
 
     let playback_send = playback::init_playback_channel().await;
 
+    let user_settings = match load_user_settings() {
+        Ok(settings) => settings,
+        Err(err) => {
+            eprintln!("Failed to load user settings: {}", err);
+            UserSettings::default()
+        }
+    };
+
     let nexus = Arc::new(Mutex::new(AppState {
         playback_send: playback_send.clone(),
+        user_settings: Some(user_settings),
+        user_array: Vec::new(),
+        user_messages_array: Vec::new(),
     }));
 
     tauri::Builder::default()
