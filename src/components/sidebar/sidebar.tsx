@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import HoverableIcon from "@/utils/hoverable-icon";
 import LightSwitch from "./light-switch";
-import useNexus from "@/store";
+import useInterfaceStore from "@/interface-store";
 import { useThemeColor } from "@/config/themes";
 import settings from "../../../public/sidebar/settings.svg";
 import keyboard from "../../../public/sidebar/keyboard.svg";
@@ -12,8 +12,8 @@ import chat from "../../../public/sidebar/chat.svg";
 import add from "../../../public/sidebar/add.svg";
 
 export default function SideBar() {
-  const sidebar = useNexus((state) => state.sidebar);
-  const viewHeight = useNexus((state) => state.viewHeight);
+  const sidebar = useInterfaceStore((state) => state.sidebar);
+  const viewHeight = useInterfaceStore((state) => state.viewHeight);
 
   const [isShort1, setIsShort1] = useState(false);
   const [isShort2, setIsShort2] = useState(false);

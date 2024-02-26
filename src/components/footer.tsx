@@ -4,7 +4,7 @@ import Image from "next/image";
 import React, { useRef, useEffect, useState } from "react";
 import arrow from "../../public/chat/arrow_upward.svg";
 import mic from "../../public/chat/mic.svg";
-import useNexus from "@/store";
+import useInterfaceStore from "@/interface-store";
 import { useThemeColor } from "@/config/themes";
 import IconButton from "@/utils/icon-button";
 

@@ -1,13 +1,13 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import useNexus from "@/store";
+import useInterfaceStore from "@/interface-store";
 import ChatMessage from "@/components/chat/chat-message";
 import ResponseMessage from "@/components/chat/chat-response-message";
 import { Divider } from "@mantine/core";
 
 export default function HomePage() {
-  const viewHeight = useNexus((state) => state.viewHeight);
-  const viewWidth = useNexus((state) => state.viewWidth);
+  const viewHeight = useInterfaceStore((state) => state.viewHeight);
+  const viewWidth = useInterfaceStore((state) => state.viewWidth);
 
   return (
     <div className="flex h-full mt-10 max-w-[580px] mx-auto ">

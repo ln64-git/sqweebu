@@ -3,11 +3,11 @@ import { useState } from "react";
 import HoverableIcon from "@/utils/hoverable-icon";
 import light from "../../../public/sidebar/light.svg";
 import dark from "../../../public/sidebar/dark.svg";
-import useNexus from "@/store";
+import useInterfaceStore from "@/interface-store";
 
 export default function LightSwitch() {
   const [isLightOn, setIsLightOn] = useState(true);
-  const setDarkMode = useNexus((state) => state.setDarkMode);
+  const setDarkMode = useInterfaceStore((state) => state.setDarkMode);
 
   const toggleLight = () => {
     setDarkMode(!isLightOn);

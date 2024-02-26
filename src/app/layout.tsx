@@ -15,6 +15,10 @@ import CommandModal from "@/pages/command-modal ";
 import KeyboardModal from "@/pages/keyboard-modal ";
 import VoiceModal from "@/pages/voice-modal ";
 import GetViewSize from "@/utils/get-view-size";
+import { invoke } from "@tauri-apps/api";
+import { useEffect, useState } from "react";
+import useInterfaceStore from "@/interface-store";
+import useUserSettingsStore from "@/user-settings-store";
 
 const inter = Inter({ subsets: ["latin"] });
 

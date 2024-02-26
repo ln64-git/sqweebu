@@ -18,7 +18,7 @@ interface Nexus {
   setViewHeight: (viewHeight: number) => void;
 }
 
-const useNexus = create<Nexus>((set) => ({
+const useInterfaceStore = create<Nexus>((set) => ({
   sidebar: false,
   darkMode: true,
   command: "",
@@ -47,4 +47,4 @@ const useNexus = create<Nexus>((set) => ({
     set((state) => ({ ...state, viewHeight })),
 }));
 
-export default useNexus;
+export default useInterfaceStore;

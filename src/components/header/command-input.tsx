@@ -1,10 +1,10 @@
 import React, { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import useNexus from "@/store";
+import useInterfaceStore from "@/interface-store";
 import { useThemeColor } from "@/config/themes";
 
 export default function CommandInput() {
-  const viewWidth = useNexus((state) => state.viewWidth);
+  const viewWidth = useInterfaceStore((state) => state.viewWidth);
   const showCommandInput = viewWidth < 350;
   const [isInputFocused, setIsInputFocused] = useState(false);
 
@@ -14,7 +14,7 @@ export default function CommandInput() {
   const inputColor = useThemeColor("input");
   const textPrimary = useThemeColor("textPrimary");
   const overlayColor = useThemeColor("overlay");
-  const darkMode = useNexus((state) => state.darkMode);
+  const darkMode = useInterfaceStore((state) => state.darkMode);
   const placeholderText = darkMode
     ? "placeholder-zinc-500"
     : "placeholder-zinc-950";
@@ -83,7 +83,7 @@ interface CommandBlockProps {
 }
 
 function CommandBlock({ overlayColor, alt, label }: CommandBlockProps) {
-  const flashCommand = useNexus((state) => state.flashCommand);
+  const flashCommand = useInterfaceStore((state) => state.flashCommand);
   function handleClick() {
     flashCommand(alt);
   }

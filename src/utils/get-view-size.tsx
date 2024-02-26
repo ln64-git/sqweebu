@@ -1,9 +1,9 @@
 import { useEffect } from "react";
-import useNexus from "@/store";
+import useInterfaceStore from "@/interface-store";
 
 export default function GetViewSize() {
-  const setViewHeight = useNexus((state) => state.setViewHeight);
-  const setViewWidth = useNexus((state) => state.setViewWidth);
+  const setViewHeight = useInterfaceStore((state) => state.setViewHeight);
+  const setViewWidth = useInterfaceStore((state) => state.setViewWidth);
 
   useEffect(() => {
     function handleResize() {

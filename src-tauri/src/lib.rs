@@ -29,6 +29,7 @@ pub struct UserSettings {
     pub speech_voice: String,
     pub current_user_id: String,
     pub current_user_theme: String,
+    pub current_user_theme_mode: String,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -46,7 +47,7 @@ pub struct UserMessage {
 
 pub struct AppState {
     pub playback_send: mpsc::Sender<PlaybackCommand>,
-    pub user_settings: Option<UserSettings>, 
+    pub user_settings: Option<UserSettings>,
     pub user_array: Vec<User>,
     pub user_messages_array: Vec<UserMessage>,
 }
@@ -61,6 +62,7 @@ impl Default for UserSettings {
             speech_voice: String::default(),
             current_user_id: String::default(),
             current_user_theme: String::default(),
+            current_user_theme_mode: String::default(),
         }
     }
 }
