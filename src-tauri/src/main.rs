@@ -5,8 +5,8 @@
 
 use app::AppState;
 use app::PlaybackCommand;
-use app::_utils::azure::speak_text;
-use app::_utils::ollama::speak_ollama;
+use app::_utils::_api::azure::speak_text;
+use app::_utils::_api::ollama::speak_ollama;
 use app::_utils::playback;
 use std::sync::Arc;
 use tauri::Manager;

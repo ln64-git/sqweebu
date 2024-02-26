@@ -1,7 +1,6 @@
 // src/_utils/playback.rs
 
 // region: --- importswWE
-use crate::_utils::azure::speak_text;
 use crate::{AppState, PlaybackCommand, PlaybackManager};
 use rodio::{OutputStream, Sink};
 use std::error::Error;
