@@ -25,11 +25,10 @@ pub struct UserSettings {
     pub gpt_method: String,
     pub gpt_model: String,
     pub speech_service: String,
-    pub speech_local: String,
+    pub speech_locale: String,
     pub speech_voice: String,
     pub current_user_id: String,
-    pub current_user_theme: String,
-    pub current_user_theme_mode: String,
+    pub current_user_dark_mode: bool,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -58,11 +57,10 @@ impl Default for UserSettings {
             gpt_method: String::default(),
             gpt_model: String::default(),
             speech_service: String::default(),
-            speech_local: String::default(),
+            speech_locale: String::default(),
             speech_voice: String::default(),
             current_user_id: String::default(),
-            current_user_theme: String::default(),
-            current_user_theme_mode: String::default(),
+            current_user_dark_mode: false,
         }
     }
 }

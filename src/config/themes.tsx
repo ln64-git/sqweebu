@@ -12,8 +12,8 @@ export interface Theme {
 
 export function useThemeColor(colorType: keyof Theme): string {
   const darkMode = useInterfaceStore((state) => state.darkMode);
-  const lightTheme = useInterfaceStore((state) => state.lightTheme);
-  const darkTheme = useInterfaceStore((state) => state.darkTheme);
+  const lightTheme = defaultLightTheme;
+  const darkTheme = defaultDarkTheme;
 
   const [themeColor, setThemeColor] = useState<string>("");
 

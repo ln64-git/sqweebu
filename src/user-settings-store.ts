@@ -1,50 +1,61 @@
 import { create } from "zustand";
-import { defaultLightTheme, defaultDarkTheme, Theme } from "./config/themes";
+import { defaultDarkTheme, Theme } from "./config/themes";
 
-interface UserSettingsInterface {
-  gptService: string;
+export interface UserSettings {
+  gptMethod: string;
   gptModel: string;
   speechService: string;
   speechLocale: string;
   speechVoice: string;
   currentUserId: string;
-  currentUserTheme: Theme;
-  currentUserThemeMode: string;
-  setGptService: (service: string) => void;
+  currentUserDarkMode: boolean;
+  setGptMethod: (service: string) => void;
   setGptModel: (model: string) => void;
   setSpeechService: (service: string) => void;
   setSpeechLocale: (locale: string) => void;
   setSpeechVoice: (voice: string) => void;
   setCurrentUserId: (id: string) => void;
-  setCurrentUserTheme: (theme: Partial<Theme>) => void;
-  setCurrentUserThemeMode: (mode: string) => void;
+  setCurrentUserDarkMode: (mode: boolean) => void;
 }
 
-const userSettingsStore = create<UserSettingsInterface>((set) => ({
-  gptService: "",
-  gptModel: "",
-  speechService: "",
-  speechLocale: "",
-  speechVoice: "",
-  currentUserId: "",
-  currentUserTheme: defaultLightTheme,
-  currentUserThemeMode: "",
-  setGptService: (service) =>
-    set((state) => ({ ...state, gptService: service })),
-  setGptModel: (model) => set((state) => ({ ...state, gptModel: model })),
-  setSpeechService: (service) =>
-    set((state) => ({ ...state, speechService: service })),
-  setSpeechLocale: (locale) =>
-    set((state) => ({ ...state, speechLocale: locale })),
-  setSpeechVoice: (voice) => set((state) => ({ ...state, speechVoice: voice })),
-  setCurrentUserId: (id) => set((state) => ({ ...state, currentUserId: id })),
-  setCurrentUserTheme: (theme) =>
-    set((state) => ({
-      ...state,
-      currentUserTheme: { ...state.currentUserTheme, ...theme },
-    })),
-  setCurrentUserThemeMode: (mode) =>
-    set((state) => ({ ...state, currentUserThemeMode: mode })),
-}));
+import { readUserSettings } from "@/utils/settings"; // Import the readUserSettings function
+
+const userSettingsStore = create<UserSettings>((set) => {
+  // Initialize state with default values
+  const initialState: UserSettings = {
+    gptMethod: "",
+    gptModel: "",
+    speechService: "",
+    speechLocale: "",
+    speechVoice: "",
+    currentUserId: "",
+    currentUserDarkMode: true,
+    setGptMethod: (service) =>
+      set((state) => ({ ...state, gptMethod: service })),
+    setGptModel: (model) => set((state) => ({ ...state, gptModel: model })),
+    setSpeechService: (service) =>
+      set((state) => ({ ...state, speechService: service })),
+    setSpeechLocale: (locale) =>
+      set((state) => ({ ...state, speechLocale: locale })),
+    setSpeechVoice: (voice) =>
+      set((state) => ({ ...state, speechVoice: voice })),
+    setCurrentUserId: (id) => set((state) => ({ ...state, currentUserId: id })),
+    setCurrentUserDarkMode: (mode) =>
+      set((state) => ({ ...state, currentUserDarkMode: mode })),
+  };
+
+  // Fetch user settings and update state
+  readUserSettings()
+    .then((settings) => {
+      if (settings !== undefined) {
+        set(settings);
+      } else {
+        console.log("User settings not found. Using default settings.");
+      }
+    })
+    .catch((error) => console.error("Failed to fetch user settings:", error));
+
+  return initialState; // Return initial state immediately
+});
 
 export default userSettingsStore;

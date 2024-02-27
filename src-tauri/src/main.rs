@@ -9,6 +9,7 @@ use app::_utils::_api::ollama::speak_ollama;
 use app::_utils::playback;
 use app::_utils::user_settings::get_user_settings_path;
 use app::_utils::user_settings::load_user_settings;
+use app::_utils::user_settings::save_user_settings;
 use std::sync::Arc;
 use tauri::Manager;
 use tauri::SystemTray;
@@ -55,7 +56,8 @@ async fn main() {
             resume_playback_from_frontend,
             stop_playback_from_frontend,
             fast_forward_playback_from_frontend,
-            get_user_settings_as_json
+            get_user_settings_as_json,
+            save_user_settings_from_json
         ])
         .manage(nexus.clone())
         .build(tauri::generate_context!())
@@ -89,11 +91,8 @@ async fn get_user_settings_as_json(
 
 use serde_json::Value;
 
-// I want to say
-// IF user-settings-store changes
-// THEN set_user_settings_from_json with current user-settings-store
 #[tauri::command]
-async fn set_user_settings_from_json(
+async fn save_user_settings_from_json(
     nexus: tauri::State<'_, Arc<Mutex<AppState>>>,
     settings_json: String,
 ) -> Result<(), String> {
@@ -105,11 +104,18 @@ async fn set_user_settings_from_json(
 
     // Assuming your AppState struct has a field called user_settings of type Option<UserSettings>
     if let Some(user_settings) = &mut nexus_lock.user_settings {
-        *user_settings = match serde_json::from_value(settings_value) {
+        let settings: UserSettings = match serde_json::from_value(settings_value) {
             Ok(settings) => settings,
             Err(err) => return Err(format!("Failed to convert JSON to user settings: {}", err)),
         };
-        Ok(())
+        *user_settings = settings.clone(); // Update user settings in AppState
+        match save_user_settings(&settings) {
+            Ok(()) => {
+                println!("Updated user settings: {:?}", settings); // Log the updated settings
+                Ok(())
+            }
+            Err(err) => Err(format!("Failed to save user settings: {}", err)),
+        }
     } else {
         Err("User settings not found.".to_string())
     }

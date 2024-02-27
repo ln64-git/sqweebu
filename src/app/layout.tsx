@@ -19,6 +19,8 @@ import { invoke } from "@tauri-apps/api";
 import { useEffect, useState } from "react";
 import useInterfaceStore from "@/interface-store";
 import useUserSettingsStore from "@/user-settings-store";
+import { saveUserSettings } from "@/utils/settings";
+import userSettingsStore from "@/user-settings-store";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -29,6 +31,12 @@ export default function RootLayout({
 }>) {
   const backgroundColor = useThemeColor("background");
   const textPrimary = useThemeColor("textPrimary");
+  var userSettings = userSettingsStore((state) => state);
+  console.log(userSettings);
+
+  useEffect(() => {
+    saveUserSettings(userSettings);
+  }, [userSettings]);
 
   return (
     <html lang="en">

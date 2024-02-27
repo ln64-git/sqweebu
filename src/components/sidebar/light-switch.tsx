@@ -4,13 +4,18 @@ import HoverableIcon from "@/utils/hoverable-icon";
 import light from "../../../public/sidebar/light.svg";
 import dark from "../../../public/sidebar/dark.svg";
 import useInterfaceStore from "@/interface-store";
+import userSettingsStore from "@/user-settings-store";
 
 export default function LightSwitch() {
   const [isLightOn, setIsLightOn] = useState(true);
   const setDarkMode = useInterfaceStore((state) => state.setDarkMode);
+  const setCurrentUserDarkMode = userSettingsStore(
+    (state) => state.setCurrentUserDarkMode
+  );
 
   const toggleLight = () => {
     setDarkMode(!isLightOn);
+    setCurrentUserDarkMode(!isLightOn);
     setIsLightOn((prev) => !prev);
   };
 
