@@ -89,6 +89,9 @@ async fn get_user_settings_as_json(
 
 use serde_json::Value;
 
+// I want to say
+// IF user-settings-store changes
+// THEN set_user_settings_from_json with current user-settings-store
 #[tauri::command]
 async fn set_user_settings_from_json(
     nexus: tauri::State<'_, Arc<Mutex<AppState>>>,
