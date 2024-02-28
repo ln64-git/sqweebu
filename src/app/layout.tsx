@@ -20,7 +20,7 @@ import { useEffect, useState } from "react";
 import useInterfaceStore from "@/interface-store";
 import useUserSettingsStore from "@/user-settings-store";
 import { saveUserSettings } from "@/utils/settings";
-import userSettingsStore from "@/user-settings-store";
+import useSettingsStore from "@/user-settings-store";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -31,12 +31,25 @@ export default function RootLayout({
 }>) {
   const backgroundColor = useThemeColor("background");
   const textPrimary = useThemeColor("textPrimary");
-  var userSettings = userSettingsStore((state) => state);
-  console.log(userSettings);
+  var interfaceStore = useInterfaceStore((state) => state);
+  var settingsStore = useSettingsStore((state) => state);
+
+  var frontendDarkMode = settingsStore.currentUserDarkMode;
+  var backendDarkMode = interfaceStore.darkMode;
 
   useEffect(() => {
-    saveUserSettings(userSettings);
-  }, [userSettings]);
+    if (frontendDarkMode !== backendDarkMode) {
+      useInterfaceStore((state) => state.setDarkMode(frontendDarkMode));
+    } else if (backendDarkMode !== frontendDarkMode) {
+      useSettingsStore((state) =>
+        state.setCurrentUserDarkMode(backendDarkMode)
+      );
+    }
+  }, [frontendDarkMode]);
+
+  useEffect(() => {
+    saveUserSettings(settingsStore);
+  }, [settingsStore]);
 
   return (
     <html lang="en">

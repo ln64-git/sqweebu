@@ -45,16 +45,6 @@ const userSettingsStore = create<UserSettings>((set) => {
   };
 
   // Fetch user settings and update state
-  readUserSettings()
-    .then((settings) => {
-      if (settings !== undefined) {
-        set(settings);
-      } else {
-        console.log("User settings not found. Using default settings.");
-      }
-    })
-    .catch((error) => console.error("Failed to fetch user settings:", error));
-
   return initialState; // Return initial state immediately
 });
 
