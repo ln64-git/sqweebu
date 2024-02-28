@@ -1,1 +1,7 @@
 [workspace]
+members = [
+  "./_adapter/",
+  "./_core/",
+  "./_interfaces/",
+  "./_application/src-tauri/",
+]

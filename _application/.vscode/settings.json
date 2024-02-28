@@ -1,4 +1,5 @@
 {
+  "hide-files.files": [],
   "files.exclude": {
     "**/.git": true,
     "**/.svn": true,
@@ -6,7 +7,5 @@
     "**/CVS": true,
     "**/.DS_Store": true,
     "**/Thumbs.db": true
-  },
-  "hide-files.files": []
-  // "rust-analyzer.linkedProjects": ["./_application/src-tauri/Cargo.toml"]
+  }
 }

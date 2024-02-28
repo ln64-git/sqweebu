@@ -1,0 +1,4 @@
+/.next
+/target
+.env
+node_modules
