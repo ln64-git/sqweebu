@@ -1,11 +1,12 @@
 // Export items from playback.rs
+// region: --- Region Title
 pub mod playback;
 use std::error::Error;
-
 use _adapter::{azure::get_azure_audio_response, ollama::ollama_generate_api};
 use _interface::PlaybackCommand;
 pub use playback::*;
 use tokio::sync::mpsc;
+// endregion: --- Region Title
 
 pub async fn speak_text(
     text: &str,

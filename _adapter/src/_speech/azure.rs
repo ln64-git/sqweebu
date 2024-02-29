@@ -2,15 +2,11 @@
 
 // region: --- Imports
 
-use _interface::PlaybackCommand;
 use dotenv::dotenv;
 use std::env;
 use std::error::Error;
-use tokio::sync::mpsc;
 
 // endregion: --- Imports
-
-
 
 pub async fn get_azure_audio_response(text_to_speak: &str) -> Result<Vec<u8>, Box<dyn Error>> {
     dotenv().ok();

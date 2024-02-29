@@ -2,7 +2,6 @@
 
 // region: --- Modules
 
-use _interface::PlaybackCommand;
 use reqwest;
 use sentence::SentenceTokenizer;
 use sentence::Token;
@@ -23,6 +22,7 @@ struct GenerateRequest {
     stream: bool,
 }
 
+#[allow(dead_code)]
 #[derive(Deserialize)]
 struct OllamaFragment {
     response: String,
@@ -52,7 +52,7 @@ pub async fn ollama_generate_api(
         .await?
         .bytes_stream();
 
-    let mut stream_ended = false;
+    // let mut stream_ended = false;
     let mut sentence = String::new();
 
     while let Some(chunk) = response_stream.next().await {
@@ -65,7 +65,7 @@ pub async fn ollama_generate_api(
                     sentence.push_str(&fragment.response);
                     if detect_punctuation(fragment).await {
                         let final_sentence = parse_sentence(&sentence).await;
-                        sentence_send.send(final_sentence).await; // await here
+                        let _ = sentence_send.send(final_sentence).await; // await here
                         sentence.clear();
                     }
                 }
@@ -75,7 +75,7 @@ pub async fn ollama_generate_api(
             }
         }
     }
-    stream_ended = true;
+    // stream_ended = true;
     Ok(())
 }
 
@@ -94,7 +94,7 @@ async fn detect_punctuation(fragment: OllamaFragment) -> bool {
     let tokens = tokenizer.tokenize(text_fragment.as_str());
     for token in tokens {
         match token {
-            Token::Punctuation(punctuation) => return true,
+            Token::Punctuation(_punctuation) => return true,
             _ => {}
         }
     }
