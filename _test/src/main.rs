@@ -1,4 +1,5 @@
-use _core::{playback, speak_text};
+use _core::speak_text;
+use _interface::init_playback_channel;
 use chrono::Utc;
 
 #[tokio::main]
@@ -9,9 +10,10 @@ async fn main() {
 
     const TEXT: &str = "say something";
 
-    let playback_send = playback::init_playback_channel().await;
+    let playback_send = init_playback_channel().await;
     let _ = speak_text(TEXT, "google", &playback_send).await;
     println!("Test Complete!");
+
     let end_time = Utc::now(); // Record end time
     let duration = end_time.signed_duration_since(start_time); // Calculate duration
     let seconds = duration.num_seconds();

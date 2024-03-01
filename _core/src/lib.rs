@@ -1,11 +1,10 @@
 // Export items from playback.rs
+
 // region: --- Region Title
-pub mod playback;
 use _adapter::{
     azure::get_azure_audio_response, google::get_google_audio_response, ollama::ollama_generate_api,
 };
 use _interface::PlaybackCommand;
-pub use playback::*;
 use std::error::Error;
 use tokio::sync::mpsc;
 // endregion: --- Region Title

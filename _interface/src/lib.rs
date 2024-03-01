@@ -7,6 +7,9 @@ use std::io::Cursor;
 use std::sync::atomic::AtomicBool;
 use tokio::sync::mpsc;
 
+mod playback;
+pub use playback::*;
+
 #[derive(Debug)]
 pub struct AppState {
     pub playback_send: mpsc::Sender<PlaybackCommand>,

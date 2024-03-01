@@ -1,9 +1,11 @@
 // src/_utils/playback.rs
 
 // region: --- importswWE
-use _interface::{PlaybackCommand, PlaybackManager};
+use crate::PlaybackManager;
 use rodio::{OutputStream, Sink};
 use tokio::sync::mpsc::{self, Sender};
+
+use crate::PlaybackCommand;
 // endregion: --- imports
 
 pub async fn init_playback_channel() -> Sender<PlaybackCommand> {
