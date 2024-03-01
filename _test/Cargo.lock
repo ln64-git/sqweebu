@@ -28,6 +28,7 @@ dependencies = [
  "_adapter",
  "_interface",
  "rodio",
+ "serde",
  "tokio",
 ]
 

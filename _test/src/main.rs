@@ -1,5 +1,4 @@
 use _core::speak_text;
-use _interface::init_playback_channel;
 use chrono::Utc;
 
 #[tokio::main]

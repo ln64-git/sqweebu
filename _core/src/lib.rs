@@ -1,13 +1,25 @@
-// Export items from playback.rs
-
 // region: --- Region Title
+pub mod playback;
 use _adapter::{
     azure::get_azure_audio_response, google::get_google_audio_response, ollama::ollama_generate_api,
 };
-use _interface::PlaybackCommand;
+use playback::PlaybackCommand;
 use std::error::Error;
 use tokio::sync::mpsc;
 // endregion: --- Region Title
+
+#[derive(Debug)]
+pub struct AppState {
+    pub playback_send: mpsc::Sender<PlaybackCommand>,
+}
+
+impl Clone for AppState {
+    fn clone(&self) -> Self {
+        AppState {
+            playback_send: self.playback_send.clone(),
+        }
+    }
+}
 
 pub async fn speak_text(
     text: &str,
@@ -26,7 +38,7 @@ pub async fn speak_text(
 
 pub async fn speak_gpt(
     prompt: String,
-    gpt_service: String,
+    gpt_service: &str,
     speech_service: &str,
     playback_send: &mpsc::Sender<PlaybackCommand>,
 ) -> Result<(), Box<dyn Error>> {

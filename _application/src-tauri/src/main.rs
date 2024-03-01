@@ -3,8 +3,8 @@
 
 // region: --- imports
 
-use _core::{playback, speak_ollama, speak_text};
-use _interface::{AppState, PlaybackCommand};
+use _core::playback::{init_playback_channel, PlaybackCommand};
+use _core::{speak_gpt, speak_text, AppState};
 use tauri::Manager;
 // use tauri::SystemTray;
 // use tauri::SystemTrayEvent;
@@ -26,7 +26,7 @@ async fn main() {
     //     .add_item(quit);
     // let system_tray = SystemTray::new().with_menu(tray_menu);
 
-    let playback_send = playback::init_playback_channel().await;
+    let playback_send = init_playback_channel().await;
 
     let nexus = Arc::new(Mutex::new(AppState {
         playback_send: playback_send.clone(),
@@ -64,7 +64,7 @@ async fn speak_text_from_frontend(text: String, app: tauri::AppHandle) -> Result
         nexus.playback_send.clone()
     };
     task::spawn(async move {
-        let _ = speak_text(&text, &playback_send).await;
+        let _ = speak_text(&text, "google", &playback_send).await;
     });
     Ok(())
 }
@@ -77,7 +77,7 @@ async fn speak_ollama_from_frontend(prompt: String, app: tauri::AppHandle) -> Re
         nexus.playback_send.clone()
     };
     task::spawn(async move {
-        let _ = speak_ollama(prompt, &playback_send).await;
+        let _ = speak_gpt(prompt, "ollama", "google", &playback_send).await;
     });
     Ok(())
 }
