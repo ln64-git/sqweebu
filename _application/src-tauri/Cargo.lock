@@ -9,6 +9,7 @@ dependencies = [
  "_interface",
  "anyhow",
  "dotenv",
+ "hex",
  "hound",
  "reqwest",
  "sentence",
