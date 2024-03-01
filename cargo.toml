@@ -4,4 +4,5 @@ members = [
   "./_core/",
   "./_interfaces/",
   "./_application/src-tauri/",
+  "./_test/",
 ]
