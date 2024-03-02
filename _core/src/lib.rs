@@ -1,8 +1,7 @@
 // region: --- Region Title
 pub mod playback;
-use _adapter::{
-    azure::get_azure_audio_response, google::get_google_audio_response, ollama::ollama_generate_api,
-};
+use _adapter::ollama::ollama_generate_api;
+use _interface::get_speech_from_api;
 use playback::PlaybackCommand;
 use std::error::Error;
 use tokio::sync::mpsc;
@@ -26,13 +25,8 @@ pub async fn speak_text(
     speech_service: &str,
     playback_send: &mpsc::Sender<PlaybackCommand>,
 ) -> Result<(), Box<dyn Error>> {
-    if speech_service == "azure" {
-        let audio_data = get_azure_audio_response(text).await?;
-        let _ = playback_send.send(PlaybackCommand::Play(audio_data)).await;
-    } else if speech_service == "google" {
-        let audio_data = get_google_audio_response(text).await?;
-        let _ = playback_send.send(PlaybackCommand::Play(audio_data)).await;
-    }
+    let audio_data = get_speech_from_api(text, speech_service).await?;
+    let _ = playback_send.send(PlaybackCommand::Play(audio_data)).await;
     Ok(())
 }
 

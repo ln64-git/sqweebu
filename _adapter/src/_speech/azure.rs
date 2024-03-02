@@ -2,22 +2,18 @@
 
 // region: --- Imports
 
-use dotenv::dotenv;
-use std::env;
 use std::error::Error;
 
 // endregion: --- Imports
 
-pub async fn get_azure_audio_response(text_to_speak: &str) -> Result<Vec<u8>, Box<dyn Error>> {
-    dotenv().ok();
-    let api_key =
-        env::var("AZURE_API_KEY").expect("AZURE_API_KEY not found in environment variables");
-
-    let region = "eastus";
-    let voice_gender = "Female";
-    let voice_name = "en-US-JennyNeural";
-    let output_format = "audio-48khz-192kbitrate-mono-mp3";
-
+pub async fn get_azure_speech_response(
+    text_to_speak: &str,
+    api_key: &str,
+    region: &str,
+    voice_gender: &str,
+    voice_name: &str,
+    output_format: &str,
+) -> Result<reqwest::Response, Box<dyn Error>> {
     let token_url = format!(
         "https://{}.api.cognitive.microsoft.com/sts/v1.0/issueToken",
         region
@@ -48,7 +44,13 @@ pub async fn get_azure_audio_response(text_to_speak: &str) -> Result<Vec<u8>, Bo
         .send()
         .await?;
 
-    // Extract audio content
-    let audio_content = tts_response.bytes().await?;
-    Ok(audio_content.into_iter().collect())
+    Ok(tts_response)
 }
+
+// let region = "eastus";
+// let voice_gender = "Female";
+// let voice_name = "en-US-JennyNeural";
+// let output_format = "audio-48khz-192kbitrate-mono-mp3";
+
+// let audio_content = tts_response.bytes().await?;
+// Ok(audio_content.into_iter().collect())

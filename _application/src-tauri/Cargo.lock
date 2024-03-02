@@ -6,7 +6,6 @@ version = 3
 name = "_adapter"
 version = "0.1.0"
 dependencies = [
- "_interface",
  "anyhow",
  "dotenv",
  "hex",
@@ -36,6 +35,8 @@ dependencies = [
 name = "_interface"
 version = "0.1.0"
 dependencies = [
+ "_adapter",
+ "dotenv",
  "rodio",
  "serde",
  "tokio",

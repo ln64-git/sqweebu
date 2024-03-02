@@ -27,6 +27,7 @@ version = "0.1.0"
 dependencies = [
  "_adapter",
  "_interface",
+ "dotenv",
  "rodio",
  "serde",
  "tokio",
