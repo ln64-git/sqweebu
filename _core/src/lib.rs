@@ -1,7 +1,6 @@
 // region: --- Region Title
 pub mod playback;
-use _adapter::ollama::ollama_generate_api;
-use _interface::get_speech_from_api;
+use _interface::{get_sentence_from_api, get_speech_from_api};
 use playback::PlaybackCommand;
 use std::error::Error;
 use tokio::sync::mpsc;
@@ -36,27 +35,17 @@ pub async fn speak_gpt(
     speech_service: &str,
     playback_send: &mpsc::Sender<PlaybackCommand>,
 ) -> Result<(), Box<dyn Error>> {
-    let mut _index = 1;
     let (sentence_send, mut sentence_recv) = mpsc::channel::<String>(32);
-    if gpt_service == "ollama" {
-        tokio::spawn(async move {
-            match ollama_generate_api(prompt.clone(), sentence_send).await {
-                Ok(_) => {}
-                Err(e) => eprintln!("Failed to generate sentences: {}", e),
-            }
-        });
-    } else if gpt_service == "openai" {
-        tokio::spawn(async move {
-            match ollama_generate_api(prompt.clone(), sentence_send).await {
-                Ok(_) => {}
-                Err(e) => eprintln!("Failed to generate sentences: {}", e),
-            }
-        });
-    }
+    let gpt_service_cloned = gpt_service.to_string(); 
+    tokio::spawn(async move {
+        match get_sentence_from_api(prompt.clone(), &gpt_service_cloned, sentence_send).await {
+            Ok(_) => {}
+            Err(e) => eprintln!("Failed to generate sentences: {}", e),
+        }
+    });
 
     while let Some(sentence) = sentence_recv.recv().await {
         speak_text(&sentence, speech_service, &playback_send).await?;
     }
-
     Ok(())
 }

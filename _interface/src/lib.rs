@@ -1,8 +1,31 @@
 // region: --- Playback Manager
 
-use _adapter::{azure::get_azure_speech_response, google::get_google_speech_response};
+use _adapter::{
+    azure::get_azure_speech_response, google::get_google_speech_response,
+    ollama::ollama_generate_api, openai::chatgpt_generate_api,
+};
 use dotenv::dotenv;
 use std::{env, error::Error};
+use tokio::sync::mpsc;
+
+pub async fn get_sentence_from_api(
+    prompt: String,
+    gpt_service: &str,
+    sentence_send: mpsc::Sender<String>,
+) -> Result<(), Box<dyn Error>> {
+    match gpt_service {
+        "ollama" => {
+            ollama_generate_api(prompt, sentence_send).await?;
+        }
+        "chatgpt" => {
+            chatgpt_generate_api(prompt, sentence_send).await?;
+        }
+        _ => {
+            return Err("Invalid GPT service specified".into());
+        }
+    };
+    Ok(())
+}
 
 pub async fn get_speech_from_api(
     text: &str,
