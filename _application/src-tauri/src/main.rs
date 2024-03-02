@@ -37,7 +37,7 @@ async fn main() {
         // .on_system_tray_event(|app, event| handle_system_tray_event(app, event))
         .invoke_handler(tauri::generate_handler![
             speak_text_from_frontend,
-            speak_ollama_from_frontend,
+            speak_gpt_from_frontend,
             pause_playback_from_frontend,
             resume_playback_from_frontend,
             stop_playback_from_frontend,
@@ -70,15 +70,13 @@ async fn speak_text_from_frontend(text: String, app: tauri::AppHandle) -> Result
 }
 
 #[tauri::command]
-async fn speak_ollama_from_frontend(prompt: String, app: tauri::AppHandle) -> Result<(), String> {
+async fn speak_gpt_from_frontend(prompt: String, app: tauri::AppHandle) -> Result<(), String> {
     let playback_send = {
         let nexus_lock = app.state::<Arc<Mutex<AppState>>>();
         let nexus = nexus_lock.lock().await;
         nexus.playback_send.clone()
     };
-    task::spawn(async move {
-        let _ = speak_gpt(prompt, "ollama", "google", &playback_send).await;
-    });
+    let _ = speak_gpt(prompt, "ollama", "google", &playback_send).await;
     Ok(())
 }
 

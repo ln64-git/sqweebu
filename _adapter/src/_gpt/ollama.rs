@@ -34,17 +34,16 @@ struct OllamaFragment {
 // region: --- Ollama API
 
 pub async fn ollama_generate_api(
-    final_prompt: String,
+    prompt: String,
     sentence_send: mpsc::Sender<String>,
 ) -> Result<(), Box<dyn Error>> {
     let client = reqwest::Client::new();
     let request_body = GenerateRequest {
-        model: "dolphin-mixtral".to_string(),
-        // model: "llama2-uncensored".to_string(),
-        prompt: final_prompt,
+        // model: "dolphin-mixtral".to_string(),
+        model: "llama2-uncensored".to_string(),
+        prompt,
         stream: true,
     };
-
     let mut response_stream = client
         .post("http://localhost:11434/api/generate")
         .json(&request_body)

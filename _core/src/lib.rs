@@ -25,6 +25,7 @@ pub async fn speak_text(
     playback_send: &mpsc::Sender<PlaybackCommand>,
 ) -> Result<(), Box<dyn Error>> {
     let audio_data = get_speech_from_api(text, speech_service).await?;
+
     let _ = playback_send.send(PlaybackCommand::Play(audio_data)).await;
     Ok(())
 }
@@ -36,7 +37,7 @@ pub async fn speak_gpt(
     playback_send: &mpsc::Sender<PlaybackCommand>,
 ) -> Result<(), Box<dyn Error>> {
     let (sentence_send, mut sentence_recv) = mpsc::channel::<String>(32);
-    let gpt_service_cloned = gpt_service.to_string(); 
+    let gpt_service_cloned = gpt_service.to_string();
     tokio::spawn(async move {
         match get_sentence_from_api(prompt.clone(), &gpt_service_cloned, sentence_send).await {
             Ok(_) => {}

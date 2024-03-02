@@ -40,6 +40,7 @@ impl PlaybackManager {
 
     pub async fn process_command_queue(&mut self) {
         while let Some(command) = self.command_queue.pop_front() {
+            println!("{:#?}", command);
             self.handle_command(command)
                 .await
                 .expect("Failed to handle command");
@@ -49,13 +50,16 @@ impl PlaybackManager {
     pub async fn handle_command(&mut self, command: PlaybackCommand) -> Result<(), Box<dyn Error>> {
         match command {
             PlaybackCommand::Play(audio_data) => {
+                println!("HANDLE_COMMAND - PLAY COMMAND CALLED");
+
                 if let Some(ref mut sink) = self.sink {
                     let source = Decoder::new(Cursor::new(audio_data))?;
+                    println!("HANDLE_COMMAND - APPENDING SINK...");
                     sink.append(source);
+                    println!("HANDLE_COMMAND - SINK PLAYED");
                 }
             }
             PlaybackCommand::Pause => {
-                println!("Pausing audio playback");
                 if let Some(ref mut sink) = self.sink {
                     sink.pause();
                 }
