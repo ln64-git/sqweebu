@@ -19,6 +19,22 @@ impl Clone for AppState {
     }
 }
 
+pub async fn process_input(
+    text: &str,
+    playback_send: &mpsc::Sender<PlaybackCommand>,
+) -> Result<(), Box<dyn Error>> {
+    let result = match text {
+        input if input.starts_with("speak text") => {
+            speak_text(&input[10..], "azure", playback_send).await
+        }
+        input if input.starts_with("speak gpt") => {
+            speak_gpt((&input[9..]).to_owned(), "ollama", "azure", playback_send).await
+        }
+        _ => Ok(()),
+    };
+    result
+}
+
 pub async fn speak_text(
     text: &str,
     speech_service: &str,
@@ -30,7 +46,7 @@ pub async fn speak_text(
 }
 
 pub async fn speak_gpt(
-    prompt: String,
+    text: String,
     gpt_service: &str,
     speech_service: &str,
     playback_send: &mpsc::Sender<PlaybackCommand>,
@@ -38,7 +54,7 @@ pub async fn speak_gpt(
     let (sentence_send, mut sentence_recv) = mpsc::channel::<String>(32);
     let gpt_service_cloned = gpt_service.to_string();
     tokio::spawn(async move {
-        match get_sentence_from_api(prompt.clone(), &gpt_service_cloned, sentence_send).await {
+        match get_sentence_from_api(text.clone(), &gpt_service_cloned, sentence_send).await {
             Ok(_) => {}
             Err(e) => eprintln!("Failed to generate sentences: {}", e),
         }
