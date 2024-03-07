@@ -8,5 +8,6 @@
     "**/Thumbs.db": true
   },
   "hide-files.files": [],
-  "rust-analyzer.linkedProjects": ["./_application/src-tauri/Cargo.toml"]
+  "rust-analyzer.linkedProjects": ["./_application/src-tauri/Cargo.toml"],
+  "terminal.integrated.cwd": "./_application"
 }

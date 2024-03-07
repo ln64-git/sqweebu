@@ -25,7 +25,6 @@ pub async fn speak_text(
     playback_send: &mpsc::Sender<PlaybackCommand>,
 ) -> Result<(), Box<dyn Error>> {
     let audio_data = get_speech_from_api(text, speech_service).await?;
-
     let _ = playback_send.send(PlaybackCommand::Play(audio_data)).await;
     Ok(())
 }

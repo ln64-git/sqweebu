@@ -6,9 +6,9 @@
 use _core::playback::{init_playback_channel, PlaybackCommand};
 use _core::{speak_gpt, speak_text, AppState};
 use tauri::Manager;
-// use tauri::SystemTray;
-// use tauri::SystemTrayEvent;
-// use tauri::{CustomMenuItem, SystemTrayMenu, SystemTrayMenuItem};
+use tauri::SystemTray;
+use tauri::SystemTrayEvent;
+use tauri::{CustomMenuItem, SystemTrayMenu};
 
 use std::sync::Arc;
 use tokio::sync::Mutex;
@@ -17,14 +17,14 @@ use tokio::task;
 
 #[tokio::main]
 async fn main() {
-    // let show = CustomMenuItem::new("show".to_string(), "Show");
-    // let hide = CustomMenuItem::new("hide".to_string(), "Hide");
-    // let quit = CustomMenuItem::new("quit".to_string(), "Quit");
-    // let tray_menu = SystemTrayMenu::new()
-    //     .add_item(show)
-    //     .add_item(hide)
-    //     .add_item(quit);
-    // let system_tray = SystemTray::new().with_menu(tray_menu);
+    let show = CustomMenuItem::new("show".to_string(), "Show");
+    let hide = CustomMenuItem::new("hide".to_string(), "Hide");
+    let quit = CustomMenuItem::new("quit".to_string(), "Quit");
+    let tray_menu = SystemTrayMenu::new()
+        .add_item(show)
+        .add_item(hide)
+        .add_item(quit);
+    let system_tray = SystemTray::new().with_menu(tray_menu);
 
     let playback_send = init_playback_channel().await;
 
@@ -33,8 +33,8 @@ async fn main() {
     }));
 
     tauri::Builder::default()
-        // .system_tray(system_tray)
-        // .on_system_tray_event(|app, event| handle_system_tray_event(app, event))
+        .system_tray(system_tray)
+        .on_system_tray_event(|app, event| handle_system_tray_event(app, event))
         .invoke_handler(tauri::generate_handler![
             speak_text_from_frontend,
             speak_gpt_from_frontend,
@@ -64,7 +64,7 @@ async fn speak_text_from_frontend(text: String, app: tauri::AppHandle) -> Result
         nexus.playback_send.clone()
     };
     task::spawn(async move {
-        let _ = speak_text(&text, "google", &playback_send).await;
+        let _ = speak_text(&text, "azure", &playback_send).await;
     });
     Ok(())
 }
@@ -76,7 +76,7 @@ async fn speak_gpt_from_frontend(prompt: String, app: tauri::AppHandle) -> Resul
         let nexus = nexus_lock.lock().await;
         nexus.playback_send.clone()
     };
-    let _ = speak_gpt(prompt, "ollama", "google", &playback_send).await;
+    let _ = speak_gpt(prompt, "ollama", "azure", &playback_send).await;
     Ok(())
 }
 
@@ -130,36 +130,36 @@ async fn fast_forward_playback_from_frontend(app: tauri::AppHandle) -> Result<()
 
 // endregion: --- Playback Commands
 
-// fn handle_system_tray_event(app: &tauri::AppHandle, event: SystemTrayEvent) {
-//     match event {
-//         SystemTrayEvent::LeftClick {
-//             position: _,
-//             size: _,
-//             ..
-//         } => {
-//             println!("system tray received a left click");
-//         }
-//         SystemTrayEvent::RightClick {
-//             position: _,
-//             size: _,
-//             ..
-//         } => {
-//             println!("system tray received a right click");
-//         }
-//         SystemTrayEvent::MenuItemClick { id, .. } => match id.as_str() {
-//             "quit" => {
-//                 std::process::exit(0);
-//             }
-//             "show" => {
-//                 let window = app.get_window("main").unwrap();
-//                 window.show().unwrap();
-//             }
-//             "hide" => {
-//                 let window = app.get_window("main").unwrap();
-//                 window.hide().unwrap();
-//             }
-//             _ => {}
-//         },
-//         _ => {}
-//     }
-// }
+fn handle_system_tray_event(app: &tauri::AppHandle, event: SystemTrayEvent) {
+    match event {
+        SystemTrayEvent::LeftClick {
+            position: _,
+            size: _,
+            ..
+        } => {
+            println!("system tray received a left click");
+        }
+        SystemTrayEvent::RightClick {
+            position: _,
+            size: _,
+            ..
+        } => {
+            println!("system tray received a right click");
+        }
+        SystemTrayEvent::MenuItemClick { id, .. } => match id.as_str() {
+            "quit" => {
+                std::process::exit(0);
+            }
+            "show" => {
+                let window = app.get_window("main").unwrap();
+                window.show().unwrap();
+            }
+            "hide" => {
+                let window = app.get_window("main").unwrap();
+                window.hide().unwrap();
+            }
+            _ => {}
+        },
+        _ => {}
+    }
+}

@@ -44,7 +44,7 @@ pub async fn get_speech_from_api(
         }
         "azure" => {
             let text_to_speak = text;
-            let api_key = env::var("GOOGLE_API_KEY").expect("AZURE_API_KEY not found");
+            let api_key = env::var("AZURE_API_KEY").expect("AZURE_API_KEY not found");
             let region = "eastus";
             let voice_gender = "Female";
             let voice_name = "en-US-JennyNeural";
