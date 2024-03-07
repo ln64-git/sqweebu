@@ -19,19 +19,57 @@ impl Clone for AppState {
     }
 }
 
+use surrealdb::engine::remote::ws::Ws;
+use surrealdb::opt::auth::Root;
+use surrealdb::sql::Thing;
+use surrealdb::Surreal;
+
+use std::error::Error;
+use surrealdb::engine::local::Mem;
+use surrealdb::kvp;
+use surrealdb::Surreal;
+use surrealdb::Thing;
+
+use std::error::Error;
+use surrealdb::engine::local::RocksDB;
+use surrealdb::kvp;
+use surrealdb::Surreal;
+use surrealdb::Thing;
+
 pub async fn process_input(
     text: &str,
     playback_send: &mpsc::Sender<PlaybackCommand>,
 ) -> Result<(), Box<dyn Error>> {
-    let result = match text {
+    let mut result: Result<(), Box<dyn Error>> = Ok(());
+    let mut input_to_store = text.to_owned();
+
+    result = match text {
         input if input.starts_with("speak text") => {
+            input_to_store = input[10..].to_owned(); // Store the text without the "speak text" prefix
             speak_text(&input[10..], "azure", playback_send).await
         }
         input if input.starts_with("speak gpt") => {
+            input_to_store = input[9..].to_owned(); // Store the text without the "speak gpt" prefix
             speak_gpt((&input[9..]).to_owned(), "ollama", "azure", playback_send).await
         }
         _ => Ok(()),
     };
+
+    // Create a RocksDB database connection
+    let db = Surreal::new::<RocksDB>(()).await?;
+
+    // Select a namespace and database
+    db.use_ns("guest_chat").use_db("guest_chat").await?;
+
+    // Create a new record with the input and result
+    let created: Option<Thing> = db
+        .create("records")
+        .content((
+            kvp!("input", input_to_store),
+            kvp!("result", result.is_ok().to_string()),
+        ))
+        .await?;
+
     result
 }
 
