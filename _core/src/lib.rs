@@ -19,58 +19,46 @@ impl Clone for AppState {
     }
 }
 
-use surrealdb::engine::remote::ws::Ws;
-use surrealdb::opt::auth::Root;
+use surrealdb::engine::local::RocksDb;
 use surrealdb::sql::Thing;
 use surrealdb::Surreal;
-
-use std::error::Error;
-use surrealdb::engine::local::Mem;
-use surrealdb::kvp;
-use surrealdb::Surreal;
-use surrealdb::Thing;
-
-use std::error::Error;
-use surrealdb::engine::local::RocksDB;
-use surrealdb::kvp;
-use surrealdb::Surreal;
-use surrealdb::Thing;
+use tauri_api::path::data_dir;
 
 pub async fn process_input(
     text: &str,
     playback_send: &mpsc::Sender<PlaybackCommand>,
 ) -> Result<(), Box<dyn Error>> {
-    let mut result: Result<(), Box<dyn Error>> = Ok(());
-    let mut input_to_store = text.to_owned();
+    let mut input_text = text.to_owned();
 
-    result = match text {
+    let _ = match text {
         input if input.starts_with("speak text") => {
-            input_to_store = input[10..].to_owned(); // Store the text without the "speak text" prefix
+            input_text = input[10..].to_owned(); // Store the text without the "speak text" prefix
             speak_text(&input[10..], "azure", playback_send).await
         }
         input if input.starts_with("speak gpt") => {
-            input_to_store = input[9..].to_owned(); // Store the text without the "speak gpt" prefix
+            input_text = input[9..].to_owned(); // Store the text without the "speak gpt" prefix
             speak_gpt((&input[9..]).to_owned(), "ollama", "azure", playback_send).await
         }
         _ => Ok(()),
     };
 
     // Create a RocksDB database connection
-    let db = Surreal::new::<RocksDB>(()).await?;
+    let data_dir = data_dir().unwrap(); // This assumes the operation won't fail
+
+    // Create a RocksDB database connection using the Tauri configuration directory
+    let db_path = data_dir.join("database-folder");
+    let db = Surreal::new::<RocksDb>(db_path.to_str().unwrap()).await?; // Create database connection
 
     // Select a namespace and database
-    db.use_ns("guest_chat").use_db("guest_chat").await?;
+    db.use_ns("user").use_db("user").await?;
 
     // Create a new record with the input and result
-    let created: Option<Thing> = db
-        .create("records")
-        .content((
-            kvp!("input", input_to_store),
-            kvp!("result", result.is_ok().to_string()),
-        ))
-        .await?;
+    let created: Vec<Thing> = db.create("chat").content(input_text).await?; // Pass input text as content
 
-    result
+    // Ensure only one record is created, as per your requirement
+    let _ = created.into_iter().next();
+
+    Ok(())
 }
 
 pub async fn speak_text(
