@@ -4,7 +4,7 @@
 // region: --- imports
 
 use _core::playback::{init_playback_channel, PlaybackCommand};
-use _core::{speak_gpt, speak_text, AppState};
+use _core::{process_input, speak_gpt, speak_text, AppState};
 use tauri::Manager;
 use tauri::SystemTray;
 use tauri::SystemTrayEvent;
@@ -41,7 +41,8 @@ async fn main() {
             pause_playback_from_frontend,
             resume_playback_from_frontend,
             stop_playback_from_frontend,
-            fast_forward_playback_from_frontend
+            fast_forward_playback_from_frontend,
+            process_input_from_frontend
         ])
         .manage(nexus.clone())
         .build(tauri::generate_context!())
@@ -57,6 +58,20 @@ async fn main() {
 // region: --- Main Commands
 
 #[tauri::command]
+async fn process_input_from_frontend(text: String, app: tauri::AppHandle) -> Result<(), String> {
+    let playback_send = {
+        let nexus_lock = app.state::<Arc<Mutex<AppState>>>();
+        let nexus = nexus_lock.lock().await;
+        nexus.playback_send.clone()
+    };
+    task::spawn(async move {
+        let _ = process_input(&text, &playback_send).await;
+    });
+    Ok(())
+}
+
+
+#[tauri::command]
 async fn speak_text_from_frontend(text: String, app: tauri::AppHandle) -> Result<(), String> {
     let playback_send = {
         let nexus_lock = app.state::<Arc<Mutex<AppState>>>();
@@ -70,13 +85,13 @@ async fn speak_text_from_frontend(text: String, app: tauri::AppHandle) -> Result
 }
 
 #[tauri::command]
-async fn speak_gpt_from_frontend(prompt: String, app: tauri::AppHandle) -> Result<(), String> {
-    let playback_send = {
-        let nexus_lock = app.state::<Arc<Mutex<AppState>>>();
-        let nexus = nexus_lock.lock().await;
-        nexus.playback_send.clone()
-    };
-    let _ = speak_gpt(prompt, "ollama", "azure", &playback_send).await;
+async fn speak_gpt_from_frontend(prompt: String) -> Result<(), String> {
+    // let playback_send = {
+    //     let nexus_lock = app.state::<Arc<Mutex<AppState>>>();
+    //     let nexus = nexus_lock.lock().await;
+    //     nexus.playback_send.clone()
+    // };
+    let _ = speak_gpt(prompt, "ollama").await;
     Ok(())
 }
 

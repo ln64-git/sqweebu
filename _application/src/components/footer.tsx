@@ -43,7 +43,7 @@ export default function ChatFooter(): JSX.Element {
   const inputColor = useThemeColor("input");
 
   const submitInput = () => {
-    invoke("speak_gpt_from_frontend", { prompt: inputValue });
+    invoke("process_input_from_frontend", { text: inputValue });
   };
 
   return (

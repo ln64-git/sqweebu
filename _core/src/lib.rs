@@ -1,6 +1,6 @@
 // region: --- Region Title
 pub mod playback;
-use _interface::{get_sentence_from_api, get_speech_from_api};
+use _interface::{ get_sentence_from_gpt, get_speech_from_api };
 use playback::PlaybackCommand;
 use std::error::Error;
 use tokio::sync::mpsc;
@@ -26,7 +26,7 @@ use tauri_api::path::data_dir;
 
 pub async fn process_input(
     text: &str,
-    playback_send: &mpsc::Sender<PlaybackCommand>,
+    playback_send: &mpsc::Sender<PlaybackCommand>
 ) -> Result<(), Box<dyn Error>> {
     let mut input_text = text.to_owned();
 
@@ -37,26 +37,59 @@ pub async fn process_input(
         }
         input if input.starts_with("speak gpt") => {
             input_text = input[9..].to_owned(); // Store the text without the "speak gpt" prefix
-            speak_gpt((&input[9..]).to_owned(), "ollama", "azure", playback_send).await
+            speak_gpt((&input[9..]).to_owned(), "ollama").await
         }
         _ => Ok(()),
     };
 
     // Create a RocksDB database connection
     let data_dir = data_dir().unwrap(); // This assumes the operation won't fail
+    println!("Data directory: {:?}", data_dir);
 
     // Create a RocksDB database connection using the Tauri configuration directory
     let db_path = data_dir.join("database");
+    println!("Database path: {:?}", db_path);
     let db = Surreal::new::<RocksDb>(db_path.to_str().unwrap()).await?; // Create database connection
+    println!("Database connection established");
 
     // Select a namespace and database
     db.use_ns("user").use_db("chat").await?;
-
+    println!("Namespace and database selected");
+    
     // Create a new record with the input and result
-    let created: Vec<Thing> = db.create("input").content(input_text).await?; // Pass input text as content
+    let created: Vec<Thing> = db.create("input").content(input_text).await?;
+    println!("Record created: {:#?}", created);
+    
+    // Ensure only one record is created, as per your requirement
+    let _ = created.into_iter().next();
+    println!("Entry Created");
+
+    Ok(())
+}
+
+pub async fn process_response(sentence: String) -> Result<(), Box<dyn Error>> {
+    println!("Processing response: {:#?}", sentence);
+
+    // Create a RocksDB database connection using the Tauri configuration directory
+    let data_dir = data_dir().unwrap(); // This assumes the operation won't fail
+    println!("Data directory: {:?}", data_dir);
+    let db_path = data_dir.join("database");
+    println!("Database path: {:?}", db_path);
+    let db = Surreal::new::<RocksDb>(db_path.to_str().unwrap()).await?; // Create database connection
+    println!("Database connection established");
+
+    // Select a namespace and database
+    db.use_ns("user").use_db("chat").await?;
+    println!("Namespace and database selected");
+
+    // Create a new record with the provided sentence as content
+    let created: Vec<Thing> = db.create("response").content(sentence).await?;
+
+    println!("Record created: {:#?}", created);
 
     // Ensure only one record is created, as per your requirement
     let _ = created.into_iter().next();
+    println!("Entry Created");
 
     Ok(())
 }
@@ -64,7 +97,7 @@ pub async fn process_input(
 pub async fn speak_text(
     text: &str,
     speech_service: &str,
-    playback_send: &mpsc::Sender<PlaybackCommand>,
+    playback_send: &mpsc::Sender<PlaybackCommand>
 ) -> Result<(), Box<dyn Error>> {
     let audio_data = get_speech_from_api(text, speech_service).await?;
     let _ = playback_send.send(PlaybackCommand::Play(audio_data)).await;
@@ -73,21 +106,22 @@ pub async fn speak_text(
 
 pub async fn speak_gpt(
     text: String,
-    gpt_service: &str,
-    speech_service: &str,
-    playback_send: &mpsc::Sender<PlaybackCommand>,
+    gpt_service: &str
+    // speech_service: &str,
+    // playback_send: &mpsc::Sender<PlaybackCommand>,
 ) -> Result<(), Box<dyn Error>> {
     let (sentence_send, mut sentence_recv) = mpsc::channel::<String>(32);
     let gpt_service_cloned = gpt_service.to_string();
     tokio::spawn(async move {
-        match get_sentence_from_api(text.clone(), &gpt_service_cloned, sentence_send).await {
+        match get_sentence_from_gpt(text.clone(), &gpt_service_cloned, sentence_send).await {
             Ok(_) => {}
             Err(e) => eprintln!("Failed to generate sentences: {}", e),
         }
     });
 
     while let Some(sentence) = sentence_recv.recv().await {
-        speak_text(&sentence, speech_service, &playback_send).await?;
+        let _ = process_response(sentence).await;
+        // speak_text(&sentence, speech_service, &playback_send).await?;
     }
     Ok(())
 }

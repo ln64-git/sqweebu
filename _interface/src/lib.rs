@@ -8,7 +8,7 @@ use dotenv::dotenv;
 use std::{env, error::Error};
 use tokio::sync::mpsc;
 
-pub async fn get_sentence_from_api(
+pub async fn get_sentence_from_gpt(
     prompt: String,
     gpt_service: &str,
     sentence_send: mpsc::Sender<String>,
