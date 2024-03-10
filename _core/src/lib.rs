@@ -2,31 +2,39 @@
 pub mod playback;
 use _interface::{ get_sentence_from_gpt, get_speech_from_api };
 use playback::PlaybackCommand;
+use serde::{ Deserialize, Serialize };
 use std::error::Error;
+use chrono::{ DateTime, Utc };
 use tokio::sync::mpsc;
 // endregion: --- Region Title
 
 #[derive(Debug)]
 pub struct AppState {
     pub playback_send: mpsc::Sender<PlaybackCommand>,
+    pub db: Surreal<surrealdb::engine::local::Db>,
 }
 
 impl Clone for AppState {
     fn clone(&self) -> Self {
         AppState {
             playback_send: self.playback_send.clone(),
+            db: self.db.clone(), // Clone the database connection as well
         }
     }
 }
 
-use surrealdb::engine::local::RocksDb;
-use surrealdb::sql::Thing;
 use surrealdb::Surreal;
-use tauri_api::path::data_dir;
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+struct ChatEntry {
+    timestamp: DateTime<Utc>,
+    body: String,
+}
 
 pub async fn process_input(
     text: &str,
-    playback_send: &mpsc::Sender<PlaybackCommand>
+    playback_send: &mpsc::Sender<PlaybackCommand>,
+    db: Surreal<surrealdb::engine::local::Db>
 ) -> Result<(), Box<dyn Error>> {
     let mut input_text = text.to_owned();
 
@@ -37,59 +45,55 @@ pub async fn process_input(
         }
         input if input.starts_with("speak gpt") => {
             input_text = input[9..].to_owned(); // Store the text without the "speak gpt" prefix
-            speak_gpt((&input[9..]).to_owned(), "ollama").await
+            speak_gpt((&input[9..]).to_owned(), "ollama", db.clone()).await
         }
         _ => Ok(()),
     };
 
-    // Create a RocksDB database connection
-    let data_dir = data_dir().unwrap(); // This assumes the operation won't fail
-    println!("Data directory: {:?}", data_dir);
+    db.use_ns("user").use_db("user").await?;
 
-    // Create a RocksDB database connection using the Tauri configuration directory
-    let db_path = data_dir.join("database");
-    println!("Database path: {:?}", db_path);
-    let db = Surreal::new::<RocksDb>(db_path.to_str().unwrap()).await?; // Create database connection
-    println!("Database connection established");
+    let content = ChatEntry {
+        timestamp: Utc::now(),
+        body: input_text,
+    };
 
-    // Select a namespace and database
-    db.use_ns("user").use_db("chat").await?;
-    println!("Namespace and database selected");
-    
-    // Create a new record with the input and result
-    let created: Vec<Thing> = db.create("input").content(input_text).await?;
-    println!("Record created: {:#?}", created);
-    
-    // Ensure only one record is created, as per your requirement
-    let _ = created.into_iter().next();
-    println!("Entry Created");
+    let _: Option<Vec<ChatEntry>> = match db.create("chat").content(content).await {
+        Ok(records) => {
+            records.clone().into_iter().next();
+            Some(records)
+        }
+        Err(e) => {
+            println!("PROCESS_INPUT - Error: {:?}", e);
+            None
+        }
+    };
+    let _: Vec<ChatEntry> = db.select("chat").await?;
 
     Ok(())
 }
 
-pub async fn process_response(sentence: String) -> Result<(), Box<dyn Error>> {
-    println!("Processing response: {:#?}", sentence);
+pub async fn process_response(
+    sentence: String,
+    db: Surreal<surrealdb::engine::local::Db>
+) -> Result<(), Box<dyn Error>> {
+    db.use_ns("user").use_db("user").await?;
 
-    // Create a RocksDB database connection using the Tauri configuration directory
-    let data_dir = data_dir().unwrap(); // This assumes the operation won't fail
-    println!("Data directory: {:?}", data_dir);
-    let db_path = data_dir.join("database");
-    println!("Database path: {:?}", db_path);
-    let db = Surreal::new::<RocksDb>(db_path.to_str().unwrap()).await?; // Create database connection
-    println!("Database connection established");
+    let content = ChatEntry {
+        timestamp: Utc::now(),
+        body: sentence,
+    };
 
-    // Select a namespace and database
-    db.use_ns("user").use_db("chat").await?;
-    println!("Namespace and database selected");
-
-    // Create a new record with the provided sentence as content
-    let created: Vec<Thing> = db.create("response").content(sentence).await?;
-
-    println!("Record created: {:#?}", created);
-
-    // Ensure only one record is created, as per your requirement
-    let _ = created.into_iter().next();
-    println!("Entry Created");
+    let _: Option<Vec<ChatEntry>> = match db.create("chat").content(content).await {
+        Ok(records) => {
+            records.clone().into_iter().next();
+            Some(records)
+        }
+        Err(e) => {
+            println!("PROCESS_INPUT - Error: {:?}", e);
+            None
+        }
+    };
+    let _: Vec<ChatEntry> = db.select("chat").await?;
 
     Ok(())
 }
@@ -106,7 +110,8 @@ pub async fn speak_text(
 
 pub async fn speak_gpt(
     text: String,
-    gpt_service: &str
+    gpt_service: &str,
+    db: Surreal<surrealdb::engine::local::Db>
     // speech_service: &str,
     // playback_send: &mpsc::Sender<PlaybackCommand>,
 ) -> Result<(), Box<dyn Error>> {
@@ -120,7 +125,7 @@ pub async fn speak_gpt(
     });
 
     while let Some(sentence) = sentence_recv.recv().await {
-        let _ = process_response(sentence).await;
+        let _ = process_response(sentence, db.clone()).await;
         // speak_text(&sentence, speech_service, &playback_send).await?;
     }
     Ok(())
