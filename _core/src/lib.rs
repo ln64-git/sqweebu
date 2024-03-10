@@ -46,14 +46,14 @@ pub async fn process_input(
     let data_dir = data_dir().unwrap(); // This assumes the operation won't fail
 
     // Create a RocksDB database connection using the Tauri configuration directory
-    let db_path = data_dir.join("database-folder");
+    let db_path = data_dir.join("database");
     let db = Surreal::new::<RocksDb>(db_path.to_str().unwrap()).await?; // Create database connection
 
     // Select a namespace and database
-    db.use_ns("user").use_db("user").await?;
+    db.use_ns("user").use_db("chat").await?;
 
     // Create a new record with the input and result
-    let created: Vec<Thing> = db.create("chat").content(input_text).await?; // Pass input text as content
+    let created: Vec<Thing> = db.create("input").content(input_text).await?; // Pass input text as content
 
     // Ensure only one record is created, as per your requirement
     let _ = created.into_iter().next();

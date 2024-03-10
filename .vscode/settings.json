@@ -9,5 +9,5 @@
   },
   "hide-files.files": [],
   "rust-analyzer.linkedProjects": ["./_application/src-tauri/Cargo.toml"],
-  "terminal.integrated.cwd": "./_application"
+  "terminal.integrated.cwd": "./_application",
 }
