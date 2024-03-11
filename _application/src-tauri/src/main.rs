@@ -18,6 +18,27 @@ use tokio::sync::Mutex;
 use tokio::task;
 // endregion: --- imports
 
+use axum::routing::get;
+use serde_json::Value;
+use socketioxide::{ extract::{ AckSender, Bin, Data, SocketRef }, SocketIo };
+use tracing::info;
+use tracing_subscriber::FmtSubscriber;
+
+fn on_connect(socket: SocketRef, Data(data): Data<Value>) {
+    info!("Socket.IO connected: {:?} {:?}", socket.ns(), socket.id);
+    socket.emit("auth", data).ok();
+
+    socket.on("message", |socket: SocketRef, Data::<Value>(data), Bin(bin)| {
+        info!("Received event: {:?} {:?}", data, bin);
+        socket.bin(bin).emit("message-back", data).ok();
+    });
+
+    socket.on("message-with-ack", |Data::<Value>(data), ack: AckSender, Bin(bin)| {
+        info!("Received event: {:?} {:?}", data, bin);
+        ack.bin(bin).send(data).ok();
+    });
+}
+
 #[tokio::main]
 async fn main() {
     let show = CustomMenuItem::new("show".to_string(), "Show");
@@ -28,13 +49,10 @@ async fn main() {
 
     // Create a RocksDB database connection
     let data_dir = data_dir().unwrap(); // This assumes the operation won't fail
-    println!("Data directory: {:?}", data_dir);
     let db_path = data_dir.join("database");
-    println!("Database path: {:?}", db_path);
     let db: Surreal<surrealdb::engine::local::Db> = Surreal::new::<RocksDb>(
         db_path.to_str().unwrap()
     ).await.unwrap();
-    println!("Database connection established");
 
     let playback_send = init_playback_channel().await;
 
@@ -58,6 +76,28 @@ async fn main() {
                 process_input_from_frontend
             ]
         )
+        .setup(|_app| {
+            let _ = tracing::subscriber::set_global_default(FmtSubscriber::default());
+            let (layer, io) = SocketIo::new_layer();
+            io.ns("/", on_connect);
+            let app = axum::Router
+                ::new()
+                .route(
+                    "/",
+                    get(|| async { "Hello, World!" })
+                )
+                .layer(layer);
+            info!("Starting server");
+            // Define an async block to handle the server setup
+            let server_setup = async move {
+                let listener = tokio::net::TcpListener::bind("0.0.0.0:3025").await.unwrap();
+                axum::serve(listener, app).await.unwrap();
+            };
+            // Spawn the async block using tauri's async_runtime
+            tauri::async_runtime::spawn(server_setup);
+            // Return Ok(()) from the setup closure
+            Ok(())
+        })
         .manage(nexus.clone())
         .build(tauri::generate_context!())
         .expect("error while building tauri application")
@@ -69,6 +109,20 @@ async fn main() {
                 _ => {}
             }
         });
+
+    // let _ = tracing::subscriber::set_global_default(FmtSubscriber::default());
+    // let (layer, io) = SocketIo::new_layer();
+    // io.ns("/", on_connect);
+    // let app = axum::Router
+    //     ::new()
+    //     .route(
+    //         "/",
+    //         get(|| async { "Hello, World!" })
+    //     )
+    //     .layer(layer);
+    // info!("Starting server");
+    // let listener = tokio::net::TcpListener::bind("0.0.0.0:3025").await.unwrap();
+    // axum::serve(listener, app).await.unwrap();
 }
 
 async fn get_nexus(app: tauri::AppHandle) -> AppState {
