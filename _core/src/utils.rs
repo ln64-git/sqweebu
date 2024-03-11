@@ -4,7 +4,6 @@ use _interface::{ get_sentence_from_gpt, get_speech_from_api };
 use playback::PlaybackCommand;
 use std::error::Error;
 use tokio::sync::mpsc;
-
 use crate::playback;
 
 pub async fn speak_text(

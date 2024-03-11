@@ -1,4 +1,5 @@
 // region: --- Region Title
+use surrealdb::Surreal;
 pub mod playback;
 pub mod utils;
 use playback::PlaybackCommand;
@@ -8,6 +9,7 @@ use std::error::Error;
 use chrono::{ DateTime, Utc };
 use tokio::sync::mpsc;
 // endregion: --- Region Title
+// region: --- AppState
 
 #[derive(Debug)]
 pub struct AppState {
@@ -24,20 +26,13 @@ impl Clone for AppState {
     }
 }
 
-use surrealdb::Surreal;
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-struct ChatEntry {
-    timestamp: DateTime<Utc>,
-    body: String,
-}
+// endregion: --- AppState
 
 pub async fn process_input(
     text: &str,
     playback_send: &mpsc::Sender<PlaybackCommand>,
     db: Surreal<surrealdb::engine::local::Db>
 ) -> Result<(), Box<dyn Error>> {
-    db.use_ns("user").use_db("user").await?;
     let mut input_text = text.to_owned();
 
     let _ = match text {
@@ -52,23 +47,7 @@ pub async fn process_input(
         _ => Ok(()),
     };
 
-    let content = ChatEntry {
-        timestamp: Utc::now(),
-        body: input_text,
-    };
-
-    let _: Option<Vec<ChatEntry>> = match db.create("chat").content(content).await {
-        Ok(records) => {
-            records.clone().into_iter().next();
-            Some(records)
-        }
-        Err(e) => {
-            println!("PROCESS_INPUT - Error: {:?}", e);
-            None
-        }
-    };
-    let _: Vec<ChatEntry> = db.select("chat").await?;
-
+    let _ = add_chat_entry_to_db(&db, input_text).await;
     Ok(())
 }
 
@@ -76,13 +55,25 @@ pub async fn process_response(
     sentence: String,
     db: Surreal<surrealdb::engine::local::Db>
 ) -> Result<(), Box<dyn Error>> {
-    db.use_ns("user").use_db("user").await?;
+    let _ = add_chat_entry_to_db(&db, sentence).await;
+    Ok(())
+}
 
+#[derive(Debug, Serialize, Deserialize, Clone)]
+struct ChatEntry {
+    timestamp: DateTime<Utc>,
+    body: String,
+}
+
+async fn add_chat_entry_to_db(
+    db: &Surreal<surrealdb::engine::local::Db>,
+    content: String
+) -> Result<(), Box<dyn Error>> {
     let content = ChatEntry {
         timestamp: Utc::now(),
-        body: sentence,
+        body: content,
     };
-
+    let _ = db.use_ns("user").use_db("user").await?;
     let _: Option<Vec<ChatEntry>> = match db.create("chat").content(content).await {
         Ok(records) => {
             records.clone().into_iter().next();
@@ -93,7 +84,5 @@ pub async fn process_response(
             None
         }
     };
-    let _: Vec<ChatEntry> = db.select("chat").await?;
-
     Ok(())
 }
