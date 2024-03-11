@@ -1,21 +1,34 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 const HomePage = () => {
+  const [ws, setWs] = useState<WebSocket | null>(null);
   const [responseData, setResponseData] = useState<string | null>(null);
 
-  const fetchData = async () => {
-    try {
-      const response = await fetch("http://localhost:3025/");
-      if (!response.ok) {
-        throw new Error("Failed to fetch data");
+  useEffect(() => {
+    const socket = new WebSocket("ws://localhost:3025");
+    socket.onopen = () => {
+      console.log("WebSocket connection established.");
+      setWs(socket);
+    };
+    socket.onmessage = (event) => {
+      console.log("Received message from server:", event.data);
+      setResponseData(event.data);
+    };
+    socket.onclose = () => {
+      console.log("WebSocket connection closed.");
+    };
+    return () => {
+      if (socket) {
+        socket.close();
       }
-      const data = await response.text();
-      console.log(data);
-      setResponseData(data);
-    } catch (error: any) {
-      console.error("Error fetching data:", error.message);
+    };
+  });
+
+  const fetchData = () => {
+    if (ws) {
+      ws.send("Fetch Data");
     }
   };
 
