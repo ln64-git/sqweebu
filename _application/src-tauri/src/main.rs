@@ -39,6 +39,9 @@ fn on_connect(socket: SocketRef, Data(data): Data<Value>) {
     });
 }
 
+use tower_http::cors::{ Any, CorsLayer }; // Import CorsLayer from tower-http-cors
+use http::Method;
+
 #[tokio::main]
 async fn main() {
     let show = CustomMenuItem::new("show".to_string(), "Show");
@@ -77,6 +80,11 @@ async fn main() {
             ]
         )
         .setup(|_app| {
+            let cors = CorsLayer::new()
+                // Allow `GET` and `POST` when accessing the resource
+                .allow_methods([Method::GET, Method::POST])
+                // Allow requests from any origin
+                .allow_origin(Any);
             let _ = tracing::subscriber::set_global_default(FmtSubscriber::default());
             let (layer, io) = SocketIo::new_layer();
             io.ns("/", on_connect);
@@ -86,16 +94,14 @@ async fn main() {
                     "/",
                     get(|| async { "Hello, World!" })
                 )
+                .layer(cors)
                 .layer(layer);
             info!("Starting server");
-            // Define an async block to handle the server setup
             let server_setup = async move {
                 let listener = tokio::net::TcpListener::bind("0.0.0.0:3025").await.unwrap();
                 axum::serve(listener, app).await.unwrap();
             };
-            // Spawn the async block using tauri's async_runtime
             tauri::async_runtime::spawn(server_setup);
-            // Return Ok(()) from the setup closure
             Ok(())
         })
         .manage(nexus.clone())
