@@ -2,11 +2,9 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 // region: --- imports
-pub mod ws;
 use _core::playback::{init_playback_channel, PlaybackCommand};
-use _core::AppState;
+use _core::{process_input, AppState};
 use std::sync::Arc;
-use std::thread;
 use surrealdb::engine::local::RocksDb;
 use surrealdb::Surreal;
 use tauri::api::path::data_dir;
@@ -16,8 +14,11 @@ use tauri::SystemTrayEvent;
 use tauri::{CustomMenuItem, SystemTrayMenu};
 use tokio::sync::Mutex;
 use tokio::task;
-use ws::start_websocket_server;
 // endregion: --- imports
+
+pub mod ws;
+use std::thread;
+use ws::start_websocket_server;
 
 #[tokio::main]
 async fn main() {
@@ -30,6 +31,7 @@ async fn main() {
         .add_item(quit);
     let system_tray = SystemTray::new().with_menu(tray_menu);
 
+    // Create a RocksDB database connection
     let data_dir = data_dir().unwrap(); // This assumes the operation won't fail
     let db_path = data_dir.join("database");
     let db: Surreal<surrealdb::engine::local::Db> =
@@ -37,13 +39,14 @@ async fn main() {
             .await
             .unwrap();
 
-    let db_lock: Arc<Mutex<Surreal<surrealdb::engine::local::Db>>> = Arc::new(Mutex::new(db));
-    tauri::async_runtime::spawn(start_websocket_server(db_lock.clone()));
-
     let playback_send = init_playback_channel().await;
+
     let nexus = Arc::new(Mutex::new(AppState {
         playback_send: playback_send.clone(),
+        db,
     }));
+
+    thread::spawn(start_websocket_server);
 
     tauri::Builder::default()
         .system_tray(system_tray)
@@ -53,6 +56,7 @@ async fn main() {
             resume_playback_from_frontend,
             stop_playback_from_frontend,
             fast_forward_playback_from_frontend,
+            process_input_from_frontend
         ])
         .manage(nexus.clone())
         .build(tauri::generate_context!())
@@ -65,7 +69,24 @@ async fn main() {
         });
 }
 
+async fn get_nexus(app: tauri::AppHandle) -> AppState {
+    let nexus_lock = app.state::<Arc<Mutex<AppState>>>();
+    let nexus = nexus_lock.lock().await;
+    nexus.clone()
+}
+
 // region: --- Main Commands
+
+#[tauri::command]
+async fn process_input_from_frontend(text: String, app: tauri::AppHandle) -> Result<(), String> {
+    let nexus = get_nexus(app).await;
+    let playback_send = nexus.playback_send;
+    let db = nexus.db;
+    // task::spawn(async move {
+    let _ = process_input(&text, &playback_send, db).await;
+    // });
+    Ok(())
+}
 
 // endregion: --- Main Commands
 

@@ -2,26 +2,26 @@
 use surrealdb::Surreal;
 pub mod playback;
 pub mod utils;
+use chrono::{DateTime, Utc};
 use playback::PlaybackCommand;
-use serde::{ Deserialize, Serialize };
-use utils::{ speak_gpt, speak_text };
+use serde::{Deserialize, Serialize};
 use std::error::Error;
-use chrono::{ DateTime, Utc };
 use tokio::sync::mpsc;
+use utils::speak_gpt;
 // endregion: --- Region Title
 // region: --- AppState
 
 #[derive(Debug)]
 pub struct AppState {
     pub playback_send: mpsc::Sender<PlaybackCommand>,
-    pub db: Surreal<surrealdb::engine::local::Db>,
+    // pub db: Surreal<surrealdb::engine::local::Db>,
 }
 
 impl Clone for AppState {
     fn clone(&self) -> Self {
         AppState {
             playback_send: self.playback_send.clone(),
-            db: self.db.clone(), // Clone the database connection as well
+            // db: self.db.clone(), // Clone the database connection as well
         }
     }
 }
@@ -30,16 +30,12 @@ impl Clone for AppState {
 
 pub async fn process_input(
     text: &str,
-    playback_send: &mpsc::Sender<PlaybackCommand>,
-    db: Surreal<surrealdb::engine::local::Db>
+    db: Surreal<surrealdb::engine::local::Db>,
 ) -> Result<(), Box<dyn Error>> {
     let mut input_text = text.to_owned();
+    println!("{:#?}", input_text);
 
     let _ = match text {
-        input if input.starts_with("speak text") => {
-            input_text = input[10..].to_owned(); // Store the text without the "speak text" prefix
-            speak_text(&input[10..], "azure", playback_send).await
-        }
         input if input.starts_with("speak gpt") => {
             input_text = input[9..].to_owned(); // Store the text without the "speak gpt" prefix
             speak_gpt((&input[9..]).to_owned(), "ollama", db.clone()).await
@@ -53,7 +49,7 @@ pub async fn process_input(
 
 pub async fn process_response(
     sentence: String,
-    db: Surreal<surrealdb::engine::local::Db>
+    db: Surreal<surrealdb::engine::local::Db>,
 ) -> Result<(), Box<dyn Error>> {
     let _ = add_chat_entry_to_db(&db, sentence).await;
     Ok(())
@@ -67,7 +63,7 @@ struct ChatEntry {
 
 async fn add_chat_entry_to_db(
     db: &Surreal<surrealdb::engine::local::Db>,
-    content: String
+    content: String,
 ) -> Result<(), Box<dyn Error>> {
     let content = ChatEntry {
         timestamp: Utc::now(),

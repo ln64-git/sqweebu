@@ -4,9 +4,18 @@ import mic from "../../public/chat/mic.svg";
 import { useThemeColor } from "@/config/themes";
 import IconButton from "@/utils/icon-button";
 import { invoke } from "@tauri-apps/api/tauri";
+import useWebSocket from "@/utils/web-socket";
+import { text } from "stream/consumers";
 
 export default function ChatFooter(): JSX.Element {
+  const backgroundColor = useThemeColor("background");
+  const inputColor = useThemeColor("input");
   const [inputValue, setInputValue] = useState<string>("");
+  const { sendMessage } = useWebSocket("ws://localhost:8080");
+
+  const submitInput = () => {
+    sendMessage(inputValue);
+  };
 
   const handleInputChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
     setInputValue(event.target.value);
@@ -25,26 +34,16 @@ export default function ChatFooter(): JSX.Element {
   useEffect(() => {
     const textarea = document.getElementById("textarea") as HTMLTextAreaElement;
     if (!textarea) return;
-
     const adjustTextareaHeight = () => {
       textarea.style.height = "auto";
       textarea.style.height = textarea.scrollHeight + "px";
     };
-
     textarea.addEventListener("input", adjustTextareaHeight);
     textarea.dispatchEvent(new Event("input"));
-
     return () => {
       textarea.removeEventListener("input", adjustTextareaHeight);
     };
   }, []);
-
-  const backgroundColor = useThemeColor("background");
-  const inputColor = useThemeColor("input");
-
-  const submitInput = () => {
-    invoke("process_input_from_frontend", { text: inputValue });
-  };
 
   return (
     <div style={{ backgroundColor }} className="w-full bg-opacity-60 px-1">
