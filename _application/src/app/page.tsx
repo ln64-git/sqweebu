@@ -7,7 +7,7 @@ const HomePage = () => {
   const [responseData, setResponseData] = useState<string | null>(null);
 
   useEffect(() => {
-    const socket = new WebSocket("ws://localhost:3025");
+    const socket = new WebSocket("ws://localhost:8080");
     socket.onopen = () => {
       console.log("WebSocket connection established.");
       setWs(socket);
@@ -24,7 +24,7 @@ const HomePage = () => {
         socket.close();
       }
     };
-  });
+  }, []);
 
   const fetchData = () => {
     if (ws) {

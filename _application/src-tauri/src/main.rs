@@ -4,6 +4,7 @@
 // region: --- imports
 use _core::playback::{init_playback_channel, PlaybackCommand};
 use _core::{process_input, AppState};
+use std::sync::Arc;
 use surrealdb::engine::local::RocksDb;
 use surrealdb::Surreal;
 use tauri::api::path::data_dir;
@@ -11,47 +12,13 @@ use tauri::Manager;
 use tauri::SystemTray;
 use tauri::SystemTrayEvent;
 use tauri::{CustomMenuItem, SystemTrayMenu};
-use std::sync::Arc;
 use tokio::sync::Mutex;
 use tokio::task;
 // endregion: --- imports
 
-use axum::routing::get;
-use serde_json::Value;
-use socketioxide::{
-    extract::{AckSender, Bin, Data, SocketRef},
-    SocketIo,
-};
-use tracing::info;
-use tracing_subscriber::FmtSubscriber;
-
-fn on_connect(socket: SocketRef, Data(data): Data<Value>) {
-    info!(
-        "ON_CONNECT - Socket.IO connected: {:?} {:?}",
-        socket.ns(),
-        socket.id
-    );
-    socket.emit("auth", data).ok();
-
-    socket.on(
-        "message",
-        |socket: SocketRef, Data::<Value>(data), Bin(bin)| {
-            info!("ON_CONNECT - Received event: {:?} {:?}", data, bin);
-            socket.bin(bin).emit("message-back", data).ok();
-        },
-    );
-
-    socket.on(
-        "message-with-ack",
-        |Data::<Value>(data), ack: AckSender, Bin(bin)| {
-            info!("ON_CONNECT - Received event: {:?} {:?}", data, bin);
-            ack.bin(bin).send(data).ok();
-        },
-    );
-}
-
-use http::Method;
-use tower_http::cors::{Any, CorsLayer}; // Import CorsLayer from tower-http-cors
+pub mod ws;
+use std::thread;
+use ws::start_websocket_server;
 
 #[tokio::main]
 async fn main() {
@@ -79,6 +46,8 @@ async fn main() {
         db,
     }));
 
+    thread::spawn(start_websocket_server);
+
     tauri::Builder::default()
         .system_tray(system_tray)
         .on_system_tray_event(|app, event| handle_system_tray_event(app, event))
@@ -89,25 +58,6 @@ async fn main() {
             fast_forward_playback_from_frontend,
             process_input_from_frontend
         ])
-        .setup(|_app| {
-            let cors = CorsLayer::new()
-                .allow_methods([Method::GET, Method::POST])
-                .allow_origin(Any);
-            let _ = tracing::subscriber::set_global_default(FmtSubscriber::default());
-            let (layer, io) = SocketIo::new_layer();
-            io.ns("/", on_connect);
-            let app = axum::Router::new()
-                .route("/", get(|| async { "Hello, World!" }))
-                .layer(cors)
-                .layer(layer);
-            info!("MAIN - Starting server");
-            let server_setup = async move {
-                let listener = tokio::net::TcpListener::bind("0.0.0.0:3025").await.unwrap();
-                axum::serve(listener, app).await.unwrap();
-            };
-            tauri::async_runtime::spawn(server_setup);
-            Ok(())
-        })
         .manage(nexus.clone())
         .build(tauri::generate_context!())
         .expect("error while building tauri application")
