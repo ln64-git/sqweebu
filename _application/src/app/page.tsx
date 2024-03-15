@@ -1,47 +1,46 @@
 "use client";
-
+import { invoke } from "@tauri-apps/api";
 import { useState, useEffect } from "react";
 
+interface ChatMessage {
+  timestamp: string;
+  body: string;
+}
+
 const HomePage = () => {
-  const [ws, setWs] = useState<WebSocket | null>(null);
-  const [responseData, setResponseData] = useState<string | null>(null);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
 
   useEffect(() => {
-    const socket = new WebSocket("ws://localhost:8080");
-    socket.onopen = () => {
-      console.log("WebSocket connection established.");
-      setWs(socket);
-    };
-    socket.onmessage = (event) => {
-      console.log("Received message from server:", event.data);
-      setResponseData(event.data);
-    };
-    socket.onclose = () => {
-      console.log("WebSocket connection closed.");
-    };
-    return () => {
-      if (socket) {
-        socket.close();
+    const getData = async () => {
+      try {
+        const jsonString: string = await invoke("get_chat_updates");
+        const data = JSON.parse(jsonString);
+        console.log(data);
+        setMessages(data);
+      } catch (error) {
+        console.error("Failed to fetch chat updates:", error);
       }
     };
+    getData();
+    const intervalId = setInterval(getData, 5000);
+    return () => clearInterval(intervalId);
   }, []);
 
-  const fetchData = () => {
-    if (ws) {
-      ws.send("Fetch Data");
-    }
-  };
-
   return (
-    <div className="flex h-full mt-10 max-w-[580px] mx-auto ">
+    <div className="flex h-full mt-10 max-w-[580px] mx-auto">
       <div className="flex-1 px-4 text-zinc-400 mt-1.5 gap-2">
-        <button className="bg-indigo-950 rounded-md p-2" onClick={fetchData}>
-          Fetch Data
-        </button>
-        {responseData && (
+        {messages && (
           <div className="mt-4">
-            <p>Server Response:</p>
-            <pre>{responseData}</pre>
+            <ul>
+              {messages.map((message, index) => (
+                <li key={index}>
+                  <strong>
+                    {new Date(message.timestamp).toLocaleString()}:
+                  </strong>{" "}
+                  {message.body}
+                </li>
+              ))}
+            </ul>
           </div>
         )}
       </div>

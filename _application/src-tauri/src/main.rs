@@ -12,9 +12,9 @@ use std::time::Duration;
 use surrealdb::engine::local::RocksDb;
 use surrealdb::Surreal;
 use tauri::api::path::data_dir;
-use tauri::Manager;
 use tauri::SystemTray;
 use tauri::SystemTrayEvent;
+use tauri::{AppHandle, Manager};
 use tauri::{CustomMenuItem, SystemTrayMenu};
 use tokio::sync::{broadcast, Mutex};
 use tokio::task;
@@ -40,28 +40,16 @@ async fn main() {
         Surreal::new::<RocksDb>(db_path.to_str().unwrap())
             .await
             .unwrap();
-    let _ = db.use_ns("test").use_db("test").await;
+    let _ = db.use_ns("user").use_db("user").await;
 
-    let db_clone = db.clone(); // Clone the db value
-    let db_lock: Arc<Mutex<Surreal<surrealdb::engine::local::Db>>> = Arc::new(Mutex::new(db_clone)); // Use the cloned value
-
-    tauri::async_runtime::spawn(start_websocket_server(db_lock.clone()));
+    // let db_clone = db.clone(); // Clone the db value
+    // let db_lock: Arc<Mutex<Surreal<surrealdb::engine::local::Db>>> = Arc::new(Mutex::new(db_clone)); // Use the cloned value
 
     let playback_send = init_playback_channel().await;
     let nexus = Arc::new(Mutex::new(AppState {
         playback_send: playback_send.clone(),
         db,
     }));
-
-    let (sender, _) = broadcast::channel(100);
-    tokio::spawn(async move {
-        loop {
-            // Broadcast database changes to WebSocket clients
-            let _ = broadcast_chat_entries(db_lock.clone(), sender.clone()).await;
-            // Adjust the sleep duration based on your requirements
-            tokio::time::sleep(Duration::from_secs(5)).await;
-        }
-    });
 
     tauri::Builder::default()
         .system_tray(system_tray)
@@ -72,6 +60,7 @@ async fn main() {
             stop_playback_from_frontend,
             fast_forward_playback_from_frontend,
             process_input_from_frontend,
+            get_chat_updates
         ])
         .manage(nexus.clone())
         .build(tauri::generate_context!())
@@ -84,23 +73,41 @@ async fn main() {
         });
 }
 
-async fn broadcast_chat_entries(
-    db_lock: Arc<Mutex<Surreal<surrealdb::engine::local::Db>>>,
-    sender: broadcast::Sender<String>,
-) -> Result<(), String> {
-    let db = db_lock.lock().await;
-    // Simulated data for demonstration
-    let chat_entries: Option<Vec<ChatEntry>> = match db.select("chat").await {
-        Ok(entries) => Some(entries),
+#[tauri::command]
+async fn get_chat_updates(app: tauri::AppHandle) -> Result<String, String> {
+    // Obtain a reference to the application state.
+    let nexus = get_nexus(app).await;
+    let db = &nexus.db;
+    // Attempt to fetch the chat entries from the database.
+    let chat_entries_result = db.select("chat").await;
+    println!("{:#?}", chat_entries_result);
+    // Handle potential errors in fetching from the database.
+    let chat_entries: Vec<ChatEntry> = match chat_entries_result {
+        Ok(entries) => entries,
         Err(error) => return Err(format!("Database error: {:?}", error)),
     };
-    // Serialize the data
-    let serialized_data = serde_json::to_string(&chat_entries).map_err(|e| e.to_string())?;
-    println!("{:#?}", serialized_data);
-    // Broadcast the serialized data to connected WebSocket clients
-    sender.send(serialized_data).unwrap();
-    Ok(())
+    println!("{:#?}", chat_entries);
+    // Serialize the fetched chat entries to a JSON string.
+    serde_json::to_string(&chat_entries).map_err(|e| format!("Serialization error: {}", e))
 }
+
+// async fn broadcast_chat_entries(
+//     db_lock: Arc<Mutex<Surreal<surrealdb::engine::local::Db>>>,
+//     sender: broadcast::Sender<String>,
+// ) -> Result<(), String> {
+//     let db = db_lock.lock().await;
+//     // Simulated data for demonstration
+//     let chat_entries: Option<Vec<ChatEntry>> = match db.select("chat").await {
+//         Ok(entries) => Some(entries),
+//         Err(error) => return Err(format!("Database error: {:?}", error)),
+//     };
+//     // Serialize the data
+//     let serialized_data = serde_json::to_string(&chat_entries).map_err(|e| e.to_string())?;
+//     println!("{:#?}", serialized_data);
+//     // Broadcast the serialized data to connected WebSocket clients
+//     sender.send(serialized_data).unwrap();
+//     Ok(())
+// }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 struct ChatEntry {
