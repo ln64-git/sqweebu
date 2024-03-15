@@ -1,7 +1,7 @@
 import { useThemeColor } from "@/config/themes";
 import React from "react";
 
-export default function ChatMessage() {
+const ChatMessage: React.FC<ChatEntry> = ({ body, timestamp }) => {
   const inputColor = useThemeColor("overlay");
   const textSecondary = useThemeColor("textSecondary");
 
@@ -18,12 +18,13 @@ export default function ChatMessage() {
               className="text-sm font-normal X"
               style={{ color: textSecondary }}
             >
-              That's awesome. I think our users will really appreciate the
-              improvements.
+              {timestamp + " - " + body}
             </p>
           </div>
         </div>
       </div>
     </div>
   );
-}
+};
+
+export default ChatMessage;
