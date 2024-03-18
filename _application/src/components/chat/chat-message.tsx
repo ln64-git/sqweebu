@@ -1,5 +1,6 @@
 import React from "react";
 import { useTheme } from "../utils/theme-provider";
+import formatTimestamp from "@/utils/format-timestamp";
 
 interface ChatEntry {
   body: string;
@@ -19,8 +20,11 @@ const ChatMessage: React.FC<ChatEntry> = ({ body, timestamp }) => {
             style={{ backgroundColor: inputColor }}
             className="flex flex-col leading-1.5 p-4 opacity-60 rounded-e-xl rounded-es-xl "
           >
+            <p style={{ color: textSecondary, fontSize: "8px" }}>
+              {formatTimestamp(timestamp)}
+            </p>
             <p className="text-sm font-normal" style={{ color: textSecondary }}>
-              {timestamp + " - " + body}
+              {body}
             </p>
           </div>
         </div>
