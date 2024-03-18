@@ -4,12 +4,12 @@ import RewindButton from "./rewind-button";
 import PlayButton from "./play-pause-button";
 import FastForwardButton from "./fast-forward-button";
 import VolumeButton from "./volume-button";
-import useNexus from "@/store";
+import { useDisplayStore } from "@/store/display-store";
 
 const PlaybackControls = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
-  const viewWidth = useNexus((state) => state.viewWidth);
+  const viewWidth = useDisplayStore((state) => state.viewWidth);
 
   const togglePlay = () => {
     setIsPlaying(!isPlaying);

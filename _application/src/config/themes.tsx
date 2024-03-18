@@ -1,4 +1,4 @@
-import useNexus from "@/store";
+import { useThemeStore } from "@/store/theme-store";
 import { useEffect, useState } from "react";
 
 export interface Theme {
@@ -11,9 +11,9 @@ export interface Theme {
 }
 
 export function useThemeColor(colorType: keyof Theme): string {
-  const darkMode = useNexus((state) => state.darkMode);
-  const lightTheme = useNexus((state) => state.lightTheme);
-  const darkTheme = useNexus((state) => state.darkTheme);
+  const darkMode = useThemeStore((state) => state.darkMode);
+  const lightTheme = useThemeStore((state) => state.lightTheme);
+  const darkTheme = useThemeStore((state) => state.darkTheme);
 
   const [themeColor, setThemeColor] = useState<string>("");
 

@@ -3,14 +3,14 @@ import { useState } from "react";
 import HoverableIcon from "@/utils/hoverable-icon";
 import light from "../../../public/sidebar/light.svg";
 import dark from "../../../public/sidebar/dark.svg";
-import useNexus from "@/store";
+import { useThemeStore } from "@/store/theme-store";
 
 export default function LightSwitch() {
   const [isLightOn, setIsLightOn] = useState(true);
-  const setDarkMode = useNexus((state) => state.setDarkMode);
+  const toggleDarkMode = useThemeStore((state) => state.toggleDarkMode);
 
   const toggleLight = () => {
-    setDarkMode(!isLightOn);
+    toggleDarkMode();
     setIsLightOn((prev) => !prev);
   };
 

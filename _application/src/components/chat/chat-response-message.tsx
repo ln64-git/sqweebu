@@ -1,10 +1,10 @@
-// import { useThemeColor } from "@/config/themes";
+import { useThemeColor } from "@/config/themes";
 
 const ResponseMessage: React.FC<ChatEntry> = ({ body }) => {
-  // const textPrimary = useThemeColor("textPrimary");
+  const textPrimary = useThemeColor("textPrimary");
 
   return (
-    <div style={{ color: "#FFFFFF" }} className="mx-2 my-2 mb-8 text-sm ">
+    <div style={{ color: textPrimary }} className="mx-2 my-2 mb-8 text-sm ">
       {body}
     </div>
   );

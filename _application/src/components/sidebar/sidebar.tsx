@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import HoverableIcon from "@/utils/hoverable-icon";
 import LightSwitch from "./light-switch";
-import useNexus from "@/store";
 import { useThemeColor } from "@/config/themes";
 import settings from "../../../public/sidebar/settings.svg";
 import keyboard from "../../../public/sidebar/keyboard.svg";
@@ -10,10 +9,11 @@ import voice from "../../../public/sidebar/voice.svg";
 import model from "../../../public/sidebar/model.svg";
 import chat from "../../../public/sidebar/chat.svg";
 import add from "../../../public/sidebar/add.svg";
+import { useDisplayStore } from "@/store/display-store";
 
 export default function SideBar() {
-  const sidebar = useNexus((state) => state.sidebar);
-  const viewHeight = useNexus((state) => state.viewHeight);
+  const sidebar = useDisplayStore((state) => state.sidebar);
+  const viewHeight = useDisplayStore((state) => state.viewHeight);
 
   const [isShort1, setIsShort1] = useState(false);
   const [isShort2, setIsShort2] = useState(false);

@@ -1,4 +1,5 @@
 "use client";
+import ChatMessage from "@/components/chat/chat-message";
 import { invoke } from "@tauri-apps/api";
 import { useState, useEffect } from "react";
 
@@ -33,12 +34,16 @@ const HomePage = () => {
           <div className="mt-4">
             <ul>
               {messages.map((message, index) => (
-                <li key={index}>
-                  <strong>
-                    {new Date(message.timestamp).toLocaleString()}:
-                  </strong>{" "}
-                  {message.body}
-                </li>
+                <ChatMessage
+                  body={message.body}
+                  timestamp={message.timestamp}
+                />
+                // <li key={index}>
+                //   <strong>
+                //     {new Date(message.timestamp).toLocaleString()}:
+                //   </strong>{" "}
+                //   {message.body}
+                // </li>
               ))}
             </ul>
           </div>

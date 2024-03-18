@@ -1,6 +1,6 @@
 import { useState } from "react";
 import Image from "next/image";
-import useNexus from "@/store";
+import { useCommandStore } from "@/store/command-store";
 
 interface HoverableIconProps {
   src: string;
@@ -10,7 +10,7 @@ interface HoverableIconProps {
 
 const HoverableIcon: React.FC<HoverableIconProps> = ({ src, alt, size }) => {
   const [isHovered, setIsHovered] = useState(false);
-  const flashCommand = useNexus((state) => state.flashCommand);
+  const flashCommand = useCommandStore((state) => state.flashCommand);
 
   const handleClick = () => {
     flashCommand(alt);

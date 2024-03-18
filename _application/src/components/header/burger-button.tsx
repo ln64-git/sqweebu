@@ -1,14 +1,14 @@
 "use client";
-import useNexus from "@/store";
+import { useDisplayStore } from "@/store/display-store";
 import { Burger } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 
 export default function BurgerButton() {
   const [opened, { toggle }] = useDisclosure();
-  const setSidebar = useNexus((state) => state.setSidebar);
+  const toggleSidebar = useDisplayStore((state) => state.toggleSidebar);
 
   const handleClick = () => {
-    setSidebar(!opened);
+    toggleSidebar();
     toggle();
   };
   return (

@@ -1,9 +1,9 @@
+import { useDisplayStore } from "@/store/display-store";
 import { useEffect } from "react";
-import useNexus from "@/store";
 
 export default function GetViewSize() {
-  const setViewHeight = useNexus((state) => state.setViewHeight);
-  const setViewWidth = useNexus((state) => state.setViewWidth);
+  const setViewHeight = useDisplayStore((state) => state.setViewHeight);
+  const setViewWidth = useDisplayStore((state) => state.setViewWidth);
 
   useEffect(() => {
     function handleResize() {

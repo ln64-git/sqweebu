@@ -1,11 +1,11 @@
 "use client";
-import useNexus from "@/store";
+import { useCommandStore } from "@/store/command-store";
 import { Modal } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import React, { useEffect } from "react";
 
 export default function SettingsModal() {
-  const command = useNexus((state) => state.command);
+  const command = useCommandStore((state) => state.command);
   const [opened, { open, close }] = useDisclosure(false);
 
   useEffect(() => {

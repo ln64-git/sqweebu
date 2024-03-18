@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { defaultLightTheme, defaultDarkTheme, Theme } from "./config/themes";
+import { defaultLightTheme, defaultDarkTheme, Theme } from "../config/themes";
 
 interface Nexus {
   sidebar: boolean;
