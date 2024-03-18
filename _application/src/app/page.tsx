@@ -31,13 +31,15 @@ const HomePage = () => {
     <div className=" flex h-full mt-10 max-w-[580px] mx-auto">
       <div className="flex-1 px-4 text-zinc-400 mt-1.5 gap-2">
         {messages && (
-          <div className="mt-4">
+          <div className="">
             <ul>
               {messages.map((message, index) => (
-                <ChatMessage
-                  body={message.body}
-                  timestamp={message.timestamp}
-                />
+                <div className="py-1">
+                  <ChatMessage
+                    body={message.body}
+                    timestamp={message.timestamp}
+                  />
+                </div>
               ))}
             </ul>
           </div>
