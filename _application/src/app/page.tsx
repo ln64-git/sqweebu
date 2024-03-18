@@ -28,7 +28,7 @@ const HomePage = () => {
   }, []);
 
   return (
-    <div className="flex h-full mt-10 max-w-[580px] mx-auto">
+    <div className=" flex h-full mt-10 max-w-[580px] mx-auto">
       <div className="flex-1 px-4 text-zinc-400 mt-1.5 gap-2">
         {messages && (
           <div className="mt-4">
@@ -38,12 +38,6 @@ const HomePage = () => {
                   body={message.body}
                   timestamp={message.timestamp}
                 />
-                // <li key={index}>
-                //   <strong>
-                //     {new Date(message.timestamp).toLocaleString()}:
-                //   </strong>{" "}
-                //   {message.body}
-                // </li>
               ))}
             </ul>
           </div>

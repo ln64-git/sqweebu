@@ -2,7 +2,7 @@
 import React from "react";
 import volume_up from "../../../../public/chat/volume_up.svg";
 import volume_mute from "../../../../public/chat/volume_mute.svg";
-import IconButton from "../../../utils/icon-button";
+import IconButton from "../../utils/icon-button";
 
 interface VolumeButtonProps {
   isMuted: boolean;

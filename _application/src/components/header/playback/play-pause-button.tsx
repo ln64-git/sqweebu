@@ -2,7 +2,7 @@
 import React from "react";
 import play_arrow from "../../../../public/chat/play_arrow.svg";
 import pause from "../../../../public/chat/pause.svg";
-import IconButton from "../../../utils/icon-button";
+import IconButton from "../../utils/icon-button";
 
 interface PlayButtonProps {
   isPlaying: boolean;

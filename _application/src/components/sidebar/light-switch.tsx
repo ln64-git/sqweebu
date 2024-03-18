@@ -1,19 +1,19 @@
 "use client";
-import { useState } from "react";
-import HoverableIcon from "@/utils/hoverable-icon";
+import React, { useState } from "react";
 import light from "../../../public/sidebar/light.svg";
 import dark from "../../../public/sidebar/dark.svg";
-import { useThemeStore } from "@/store/theme-store";
+import { defaultLightTheme } from "@/config/themes";
+import { useTheme } from "../utils/theme-provider";
+import HoverableIcon from "../utils/hoverable-icon";
 
 export default function LightSwitch() {
-  const [isLightOn, setIsLightOn] = useState(true);
-  const toggleDarkMode = useThemeStore((state) => state.toggleDarkMode);
+  const { theme, toggleTheme } = useTheme(); // Destructure to get toggleTheme
+  const [isLightOn, setIsLightOn] = useState(theme === defaultLightTheme); // Use theme to determine if it's light or dark
 
   const toggleLight = () => {
-    toggleDarkMode();
-    setIsLightOn((prev) => !prev);
+    toggleTheme(); // This will toggle the theme between light and dark
+    setIsLightOn((prev) => !prev); // Toggle the local state as well
   };
-
   return (
     <div className="flex flex-col items-center gap-2 pt-3 pb-4">
       <button onClick={toggleLight} className="focus:outline-none">

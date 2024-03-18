@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from "react";
-import HoverableIcon from "@/utils/hoverable-icon";
 import LightSwitch from "./light-switch";
-import { useThemeColor } from "@/config/themes";
 import settings from "../../../public/sidebar/settings.svg";
 import keyboard from "../../../public/sidebar/keyboard.svg";
 import command from "../../../public/sidebar/command.svg";
@@ -10,6 +8,8 @@ import model from "../../../public/sidebar/model.svg";
 import chat from "../../../public/sidebar/chat.svg";
 import add from "../../../public/sidebar/add.svg";
 import { useDisplayStore } from "@/store/display-store";
+import { useTheme } from "../utils/theme-provider";
+import HoverableIcon from "../utils/hoverable-icon";
 
 export default function SideBar() {
   const sidebar = useDisplayStore((state) => state.sidebar);
@@ -31,7 +31,8 @@ export default function SideBar() {
     setIsShort6(viewHeight < 170);
   }, [viewHeight]);
 
-  const overlayColor = useThemeColor("overlay");
+  const { theme } = useTheme();
+  const overlayColor = theme.overlay;
 
   return (
     <>

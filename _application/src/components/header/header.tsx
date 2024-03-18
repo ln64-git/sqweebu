@@ -2,11 +2,11 @@ import React from "react";
 import PlaybackControls from "./playback/playback-controls";
 import CommandInput from "./command-input";
 import BurgerButton from "./burger-button";
-import { useThemeColor } from "@/config/themes";
+import { useTheme } from "../utils/theme-provider";
 
 export default function Header() {
-  const overlayColor = useThemeColor("overlay");
-
+  const { theme } = useTheme();
+  const overlayColor = theme.overlay;
   return (
     <div className="flex w-full  ">
       <div className="sticky top-0 w-full z-10 flex justify-between items-center">

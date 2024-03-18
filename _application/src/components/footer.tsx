@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from "react";
 import arrow from "../../public/chat/arrow_upward.svg";
 import mic from "../../public/chat/mic.svg";
-import { useThemeColor } from "@/config/themes";
-import IconButton from "@/utils/icon-button";
 import { invoke } from "@tauri-apps/api/tauri";
+import { useTheme } from "./utils/theme-provider";
+import IconButton from "./utils/icon-button";
 
 export default function ChatFooter(): JSX.Element {
   const [inputValue, setInputValue] = useState<string>("");
@@ -38,9 +38,9 @@ export default function ChatFooter(): JSX.Element {
       textarea.removeEventListener("input", adjustTextareaHeight);
     };
   }, []);
-
-  const backgroundColor = useThemeColor("background");
-  const inputColor = useThemeColor("input");
+  const { theme } = useTheme();
+  const backgroundColor = theme.background;
+  const inputColor = theme.input;
 
   const submitInput = () => {
     invoke("process_input_from_frontend", { text: inputValue });

@@ -1,6 +1,6 @@
 import React from "react";
 import rewind from "../../../../public/chat/fast_rewind.svg";
-import IconButton from "../../../utils/icon-button";
+import IconButton from "../../utils/icon-button";
 
 interface RewindButtonProps {
   onClick: () => void;

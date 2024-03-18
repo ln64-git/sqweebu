@@ -1,6 +1,6 @@
 import React from "react";
 import fast_forward from "../../../../public/chat/fast_forward.svg";
-import IconButton from "../../../utils/icon-button";
+import IconButton from "../../utils/icon-button";
 
 interface FastForwardButtonProps {
   onClick: () => void;

@@ -1,4 +1,5 @@
-import { useThemeStore } from "@/store/theme-store";
+"use client";
+// In themes.tsx
 import { useEffect, useState } from "react";
 
 export interface Theme {
@@ -8,21 +9,6 @@ export interface Theme {
   accent: string;
   textPrimary: string;
   textSecondary: string;
-}
-
-export function useThemeColor(colorType: keyof Theme): string {
-  const darkMode = useThemeStore((state) => state.darkMode);
-  const lightTheme = useThemeStore((state) => state.lightTheme);
-  const darkTheme = useThemeStore((state) => state.darkTheme);
-
-  const [themeColor, setThemeColor] = useState<string>("");
-
-  useEffect(() => {
-    const currentTheme = darkMode ? darkTheme : lightTheme;
-    setThemeColor(darkMode ? currentTheme[colorType] : currentTheme[colorType]);
-  }, [darkMode, lightTheme, darkTheme, colorType]);
-
-  return themeColor;
 }
 
 export const defaultLightTheme: Theme = {

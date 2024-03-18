@@ -1,6 +1,6 @@
 import React from "react";
 import stop from "../../../../public/chat/stop.svg";
-import IconButton from "../../../utils/icon-button";
+import IconButton from "../../utils/icon-button";
 
 interface StopButtonProps {
   onClick: () => void;

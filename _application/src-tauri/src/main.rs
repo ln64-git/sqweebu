@@ -2,25 +2,21 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 // region: --- imports
-use crate::ws::start_websocket_server;
 use _core::playback::{init_playback_channel, PlaybackCommand};
 use _core::{process_input, AppState};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
-use std::time::Duration;
 use surrealdb::engine::local::RocksDb;
 use surrealdb::Surreal;
 use tauri::api::path::data_dir;
+use tauri::Manager;
 use tauri::SystemTray;
 use tauri::SystemTrayEvent;
-use tauri::{AppHandle, Manager};
 use tauri::{CustomMenuItem, SystemTrayMenu};
-use tokio::sync::{broadcast, Mutex};
+use tokio::sync::Mutex;
 use tokio::task;
 // endregion: --- imports
-
-pub mod ws;
 
 #[tokio::main]
 async fn main() {

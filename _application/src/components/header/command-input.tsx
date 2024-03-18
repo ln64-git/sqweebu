@@ -1,9 +1,9 @@
 import React, { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { useThemeColor } from "@/config/themes";
 import { useDisplayStore } from "@/store/display-store";
 import { useThemeStore } from "@/store/theme-store";
 import { useCommandStore } from "@/store/command-store";
+import { useTheme } from "../utils/theme-provider";
 
 export default function CommandInput() {
   const viewWidth = useDisplayStore((state) => state.viewWidth);
@@ -12,10 +12,11 @@ export default function CommandInput() {
 
   const handleInputFocus = () => setIsInputFocused(true);
   const handleInputBlur = () => setIsInputFocused(false);
+  const { theme } = useTheme();
+  const inputColor = theme.input;
+  const textPrimary = theme.textPrimary;
+  const overlayColor = theme.overlay;
 
-  const inputColor = useThemeColor("input");
-  const textPrimary = useThemeColor("textPrimary");
-  const overlayColor = useThemeColor("overlay");
   const darkMode = useThemeStore((state) => state.darkMode);
   const placeholderText = darkMode
     ? "placeholder-zinc-500"

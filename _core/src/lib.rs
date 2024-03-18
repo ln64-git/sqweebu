@@ -7,7 +7,7 @@ use playback::PlaybackCommand;
 use serde::{Deserialize, Serialize};
 use std::error::Error;
 use tokio::sync::mpsc;
-use utils::{speak_gpt, speak_text};
+use utils::speak_gpt;
 // endregion: --- Region Title
 // region: --- AppState
 

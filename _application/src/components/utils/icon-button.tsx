@@ -1,5 +1,5 @@
 import React from "react";
-import HoverableIcon from "@/utils/hoverable-icon";
+import HoverableIcon from "./hoverable-icon";
 
 interface IconButton {
   icon?: {
