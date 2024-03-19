@@ -1,8 +1,9 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { invoke } from "@tauri-apps/api";
 import ChatMessage from "@/components/chat/chat-message";
 import ResponseMessage from "@/components/chat/chat-response-message";
+import { useDisplayStore } from "@/store/display-store";
 
 export interface ChatEntry {
   source: string;
@@ -12,6 +13,14 @@ export interface ChatEntry {
 
 const MessageLog = () => {
   const [messages, setMessages] = useState<ChatEntry[]>([]);
+  const messagesEndRef = useRef<HTMLDivElement>(null); // Step 1: Assign a Ref
+  const scrollBottom = useDisplayStore((state) => state.scrollBottom);
+
+  useEffect(() => {
+    if (scrollBottom) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [scrollBottom, messages]);
 
   useEffect(() => {
     const getData = async () => {
@@ -49,29 +58,29 @@ const MessageLog = () => {
   }, []);
 
   return (
-    <div className="flex h-full mt-10 max-w-[580px] mx-auto">
+    <div className="flex h-full mt-10 max-w-[580px] mx-auto overflow-y-auto">
       <div className="flex-1 px-4 text-zinc-400 mt-1.5 gap-2">
-        <div className="">
-          <ul>
-            {processedMessages.map((message, index) => (
-              <div className="py-1" key={index}>
-                {message.source === "user" ? (
-                  <ChatMessage
-                    source={message.source}
-                    content={message.content}
-                    timestamp={message.timestamp}
-                  />
-                ) : (
-                  <ResponseMessage
-                    source={message.source}
-                    content={message.content}
-                    timestamp={message.timestamp}
-                  />
-                )}
-              </div>
-            ))}
-          </ul>
-        </div>
+        <ul>
+          {processedMessages.map((message, index) => (
+            <div className="py-1" key={index}>
+              {message.source === "user" ? (
+                <ChatMessage
+                  source={message.source}
+                  content={message.content}
+                  timestamp={message.timestamp}
+                />
+              ) : (
+                <ResponseMessage
+                  source={message.source}
+                  content={message.content}
+                  timestamp={message.timestamp}
+                />
+              )}
+            </div>
+          ))}
+          {/* This div is used as an anchor to scroll into view */}
+          <div ref={messagesEndRef} />
+        </ul>
       </div>
     </div>
   );

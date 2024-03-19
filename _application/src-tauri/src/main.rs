@@ -30,7 +30,7 @@ async fn main() {
     let system_tray = SystemTray::new().with_menu(tray_menu);
 
     let data_dir = data_dir().unwrap(); // This assumes the operation won't fail
-    let db_path = data_dir.join("database");
+    let db_path = data_dir.join("sqweebu");
 
     let db: Surreal<surrealdb::engine::local::Db> =
         Surreal::new::<RocksDb>(db_path.to_str().unwrap())

@@ -32,21 +32,17 @@ pub async fn process_input(
     text: &str,
     db: Surreal<surrealdb::engine::local::Db>,
 ) -> Result<(), Box<dyn Error>> {
-    let mut input_text = text.to_owned();
-
     let _ = match text {
         // input if input.starts_with("speak text") => {
         //     input_text = input[10..].to_owned(); // Store the text without the "speak text" prefix
         //     speak_text(&input[10..], "azure", playback_send).await
         // }
         input if input.starts_with("speak gpt") => {
-            input_text = input[9..].to_owned(); // Store the text without the "speak gpt" prefix
-            speak_gpt((&input[9..]).to_owned(), "ollama", db.clone()).await
+            let _ = add_chat_entry_to_db("user".to_owned(), &db, input[9..].to_owned()).await;
+            speak_gpt(input[9..].to_owned(), "ollama", db.clone()).await
         }
         _ => Ok(()),
     };
-
-    let _ = add_chat_entry_to_db("user".to_owned(), &db, input_text).await;
     Ok(())
 }
 
