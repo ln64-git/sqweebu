@@ -94,14 +94,14 @@ pub async fn init_playback_channel() -> Sender<PlaybackCommand> {
     let (playback_send, playback_recv) = mpsc::channel::<PlaybackCommand>(32);
     let (queue_send, queue_recv) = mpsc::channel::<PlaybackCommand>(32);
 
-    tokio::spawn(playback_control_thread(playback_recv, queue_send.clone()));
+    tokio::spawn(playback_queue_thread(playback_recv, queue_send.clone()));
 
-    queued_playback_thread(queue_recv);
+    playback_command_thread(queue_recv);
 
     playback_send
 }
 
-async fn playback_control_thread(
+async fn playback_queue_thread(
     mut playback_recv: mpsc::Receiver<PlaybackCommand>,
     queue_send: mpsc::Sender<PlaybackCommand>,
 ) {
@@ -110,7 +110,7 @@ async fn playback_control_thread(
     }
 }
 
-fn queued_playback_thread(mut queue_recv: mpsc::Receiver<PlaybackCommand>) {
+fn playback_command_thread(mut queue_recv: mpsc::Receiver<PlaybackCommand>) {
     std::thread::spawn(move || {
         let rt = tokio::runtime::Runtime::new().unwrap();
         let atomic_order = std::sync::atomic::Ordering::SeqCst;

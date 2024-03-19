@@ -4,6 +4,7 @@ import mic from "../../public/chat/mic.svg";
 import { invoke } from "@tauri-apps/api/tauri";
 import { useTheme } from "./utils/theme-provider";
 import IconButton from "./utils/icon-button";
+import { useCommandStore } from "@/store/command-store";
 
 export default function ChatFooter(): JSX.Element {
   const [inputValue, setInputValue] = useState<string>("");
@@ -41,14 +42,21 @@ export default function ChatFooter(): JSX.Element {
   const { theme } = useTheme();
   const backgroundColor = theme.background;
   const inputColor = theme.input;
+  const commandMode = useCommandStore((state) => state.mode);
 
   const submitInput = () => {
-    invoke("process_input_from_frontend", { text: inputValue });
+    // Replace all instances of "_" with " " in commandMode
+    let commandWithSpaces = commandMode.replace(/_/g, " ");
+    let finalCommand = commandWithSpaces + "" + inputValue;
+    invoke("process_input_from_frontend", {
+      text: finalCommand,
+    });
   };
 
   return (
     <div style={{ backgroundColor }} className="w-full bg-opacity-60 px-1">
       <div className="max-w-[460px] mx-auto pt-1.5 pb-2  flex  ">
+        <div className="flex justify-between mx-1 items-center cursor-pointer"></div>
         <div
           style={{ backgroundColor: inputColor }}
           className="max-w-[420px] mx-auto  opacity-60 rounded-md w-full flex justify-between"

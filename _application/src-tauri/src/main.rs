@@ -4,8 +4,6 @@
 // region: --- imports
 use _core::playback::{init_playback_channel, PlaybackCommand};
 use _core::{process_input, AppState, ChatEntry};
-use chrono::{DateTime, Utc};
-use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use surrealdb::engine::local::RocksDb;
 use surrealdb::Surreal;
