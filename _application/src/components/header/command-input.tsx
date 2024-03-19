@@ -19,13 +19,12 @@ export default function CommandInput() {
   const textPrimary = theme.textPrimary;
   const overlayColor = theme.overlay;
 
-  const darkMode = useThemeStore((state) => state.darkMode);
+  const darkMode = theme.darkMode;
   const placeholderText = darkMode
     ? "placeholder-zinc-500"
     : "placeholder-zinc-950";
 
   if (viewWidth <= 320) return null;
-
   return (
     <AnimatePresence>
       <div className="flex h-[40px] justify-center flex-grow pl-[13px] pr-[145px]">

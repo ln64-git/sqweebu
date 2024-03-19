@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 
 export interface Theme {
+  darkMode: boolean;
   background: string;
   input: string;
   overlay: string;
@@ -12,6 +13,7 @@ export interface Theme {
 }
 
 export const defaultLightTheme: Theme = {
+  darkMode: false,
   background: "hsl(0, 0%, 51%)",
   input: "#646464",
   overlay: "#656565",
@@ -21,6 +23,7 @@ export const defaultLightTheme: Theme = {
 };
 
 export const defaultDarkTheme: Theme = {
+  darkMode: true,
   background: "#18181b",
   input: "#000000",
   overlay: "#09090b",
@@ -30,6 +33,7 @@ export const defaultDarkTheme: Theme = {
 };
 
 export const ubuntuTheme: Theme = {
+  darkMode: true,
   background: "#dd4814",
   input: "#dd4814",
   overlay: "#dd4814",
@@ -39,6 +43,7 @@ export const ubuntuTheme: Theme = {
 };
 
 export const draculaTheme: Theme = {
+  darkMode: true,
   background: "#282a36",
   input: "#282a36",
   overlay: "#282a36",

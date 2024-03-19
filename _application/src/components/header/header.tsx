@@ -7,6 +7,7 @@ import { useTheme } from "../utils/theme-provider";
 export default function Header() {
   const { theme } = useTheme();
   const overlayColor = theme.overlay;
+
   return (
     <div className="flex w-full  ">
       <div className="sticky top-0 w-full z-10 flex justify-between items-center">
