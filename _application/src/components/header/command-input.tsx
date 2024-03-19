@@ -25,6 +25,7 @@ export default function CommandInput() {
     : "placeholder-zinc-950";
 
   if (viewWidth <= 320) return null;
+
   return (
     <AnimatePresence>
       <div className="flex h-[40px] justify-center flex-grow pl-[13px] pr-[145px]">
@@ -44,6 +45,9 @@ export default function CommandInput() {
               placeholder={isInputFocused ? "" : "Command"}
               onClick={() => {
                 setIsInputFocused(true);
+              }}
+              onBlur={() => {
+                setTimeout(() => setIsInputFocused(false), 100);
               }}
             />
 
