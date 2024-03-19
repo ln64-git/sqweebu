@@ -1,22 +1,28 @@
 "use client";
-import ChatMessage from "@/components/chat/chat-message";
+import React, { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api";
-import { useState, useEffect } from "react";
+import ChatMessage from "@/components/chat/chat-message";
+import ResponseMessage from "@/components/chat/chat-response-message";
 
-interface ChatMessage {
+export interface ChatEntry {
+  source: string;
   timestamp: string;
-  body: string;
+  content: string;
 }
 
-const HomePage = () => {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+const MessageLog = () => {
+  const [messages, setMessages] = useState<ChatEntry[]>([]);
 
   useEffect(() => {
     const getData = async () => {
       try {
         const jsonString: string = await invoke("get_chat_updates");
-        const data = JSON.parse(jsonString);
-        console.log(data);
+        let data: ChatEntry[] = JSON.parse(jsonString);
+        data = data.sort((a, b) => {
+          const dateA = new Date(a.timestamp.replace(" at ", " "));
+          const dateB = new Date(b.timestamp.replace(" at ", " "));
+          return dateA.getTime() - dateB.getTime();
+        });
         setMessages(data);
       } catch (error) {
         console.error("Failed to fetch chat updates:", error);
@@ -27,26 +33,48 @@ const HomePage = () => {
     return () => clearInterval(intervalId);
   }, []);
 
+  const processedMessages = messages.reduce<ChatEntry[]>((acc, message) => {
+    const lastMessage = acc[acc.length - 1];
+    if (
+      lastMessage &&
+      message.source === "gpt" &&
+      lastMessage.source === "gpt"
+    ) {
+      lastMessage.content += "\n" + message.content;
+      lastMessage.timestamp = message.timestamp;
+    } else {
+      acc.push({ ...message });
+    }
+    return acc;
+  }, []);
+
   return (
-    <div className=" flex h-full mt-10 max-w-[580px] mx-auto">
+    <div className="flex h-full mt-10 max-w-[580px] mx-auto">
       <div className="flex-1 px-4 text-zinc-400 mt-1.5 gap-2">
-        {messages && (
-          <div className="">
-            <ul>
-              {messages.map((message, index) => (
-                <div className="py-1">
+        <div className="">
+          <ul>
+            {processedMessages.map((message, index) => (
+              <div className="py-1" key={index}>
+                {message.source === "user" ? (
                   <ChatMessage
-                    body={message.body}
+                    source={message.source}
+                    content={message.content}
                     timestamp={message.timestamp}
                   />
-                </div>
-              ))}
-            </ul>
-          </div>
-        )}
+                ) : (
+                  <ResponseMessage
+                    source={message.source}
+                    content={message.content}
+                    timestamp={message.timestamp}
+                  />
+                )}
+              </div>
+            ))}
+          </ul>
+        </div>
       </div>
     </div>
   );
 };
 
-export default HomePage;
+export default MessageLog;

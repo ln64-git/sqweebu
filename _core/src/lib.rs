@@ -46,7 +46,7 @@ pub async fn process_input(
         _ => Ok(()),
     };
 
-    let _ = add_chat_entry_to_db(&db, input_text).await;
+    let _ = add_chat_entry_to_db("user".to_owned(), &db, input_text).await;
     Ok(())
 }
 
@@ -54,25 +54,28 @@ pub async fn process_response(
     sentence: String,
     db: Surreal<surrealdb::engine::local::Db>,
 ) -> Result<(), Box<dyn Error>> {
-    let _ = add_chat_entry_to_db(&db, sentence).await;
+    let _ = add_chat_entry_to_db("gpt".to_owned(), &db, sentence).await;
     Ok(())
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-struct ChatEntry {
+pub struct ChatEntry {
+    source: String,
     timestamp: DateTime<Utc>,
-    body: String,
+    content: String,
 }
 
 async fn add_chat_entry_to_db(
+    source: String,
     db: &Surreal<surrealdb::engine::local::Db>,
     content: String,
 ) -> Result<(), Box<dyn Error>> {
     let content = ChatEntry {
+        source,
         timestamp: Utc::now(),
-        body: content,
+        content,
     };
-    let _ = db.use_ns("user").use_db("user").await?;
+    let _ = db.use_ns("user3").use_db("user3").await?;
     let _: Option<Vec<ChatEntry>> = match db.create("chat").content(content).await {
         Ok(records) => {
             records.clone().into_iter().next();

@@ -3,15 +3,15 @@ import { useTheme } from "../utils/theme-provider";
 import formatTimestamp from "@/utils/format-timestamp";
 
 interface ChatEntry {
-  body: string;
+  source: string;
   timestamp: string;
+  content: string;
 }
 
-const ChatMessage: React.FC<ChatEntry> = ({ body, timestamp }) => {
+const ChatMessage: React.FC<ChatEntry> = ({ content, timestamp }) => {
   const { theme } = useTheme();
   const inputColor = theme.overlay;
   const textSecondary = theme.textSecondary;
-
   return (
     <div>
       <div className="flex items-start gap-2.5">
@@ -24,7 +24,7 @@ const ChatMessage: React.FC<ChatEntry> = ({ body, timestamp }) => {
               {formatTimestamp(timestamp)}
             </p>
             <p className="text-sm font-normal" style={{ color: textSecondary }}>
-              {body}
+              {content}
             </p>
           </div>
         </div>

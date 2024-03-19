@@ -3,7 +3,7 @@
 
 // region: --- imports
 use _core::playback::{init_playback_channel, PlaybackCommand};
-use _core::{process_input, AppState};
+use _core::{process_input, AppState, ChatEntry};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
@@ -36,7 +36,7 @@ async fn main() {
         Surreal::new::<RocksDb>(db_path.to_str().unwrap())
             .await
             .unwrap();
-    let _ = db.use_ns("user").use_db("user").await;
+    let _ = db.use_ns("user3").use_db("user3").await;
 
     // let db_clone = db.clone(); // Clone the db value
     // let db_lock: Arc<Mutex<Surreal<surrealdb::engine::local::Db>>> = Arc::new(Mutex::new(db_clone)); // Use the cloned value
@@ -71,19 +71,13 @@ async fn main() {
 
 #[tauri::command]
 async fn get_chat_updates(app: tauri::AppHandle) -> Result<String, String> {
-    // Obtain a reference to the application state.
     let nexus = get_nexus(app).await;
     let db = &nexus.db;
-    // Attempt to fetch the chat entries from the database.
     let chat_entries_result = db.select("chat").await;
-    println!("{:#?}", chat_entries_result);
-    // Handle potential errors in fetching from the database.
     let chat_entries: Vec<ChatEntry> = match chat_entries_result {
         Ok(entries) => entries,
         Err(error) => return Err(format!("Database error: {:?}", error)),
     };
-    println!("{:#?}", chat_entries);
-    // Serialize the fetched chat entries to a JSON string.
     serde_json::to_string(&chat_entries).map_err(|e| format!("Serialization error: {}", e))
 }
 
@@ -104,12 +98,6 @@ async fn get_chat_updates(app: tauri::AppHandle) -> Result<String, String> {
 //     sender.send(serialized_data).unwrap();
 //     Ok(())
 // }
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-struct ChatEntry {
-    timestamp: DateTime<Utc>,
-    body: String,
-}
 
 async fn get_nexus(app: tauri::AppHandle) -> AppState {
     let nexus_lock = app.state::<Arc<Mutex<AppState>>>();
