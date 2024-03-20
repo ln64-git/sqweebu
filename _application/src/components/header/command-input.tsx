@@ -46,7 +46,7 @@ export default function CommandInput() {
                 setIsInputFocused(true);
               }}
               onBlur={() => {
-                setTimeout(() => setIsInputFocused(false), 100);
+                setTimeout(() => setIsInputFocused(false), 700);
               }}
             />
 

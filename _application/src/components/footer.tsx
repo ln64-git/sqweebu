@@ -8,6 +8,10 @@ import { useCommandStore } from "@/store/command-store";
 
 export default function ChatFooter(): JSX.Element {
   const [inputValue, setInputValue] = useState<string>("");
+  const { theme } = useTheme();
+  const backgroundColor = theme.background;
+  const inputColor = theme.input;
+  const commandMode = useCommandStore((state) => state.mode);
 
   const handleInputChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
     setInputValue(event.target.value);
@@ -23,27 +27,6 @@ export default function ChatFooter(): JSX.Element {
     }
   };
 
-  useEffect(() => {
-    const textarea = document.getElementById("textarea") as HTMLTextAreaElement;
-    if (!textarea) return;
-
-    const adjustTextareaHeight = () => {
-      textarea.style.height = "auto";
-      textarea.style.height = textarea.scrollHeight + "px";
-    };
-
-    textarea.addEventListener("input", adjustTextareaHeight);
-    textarea.dispatchEvent(new Event("input"));
-
-    return () => {
-      textarea.removeEventListener("input", adjustTextareaHeight);
-    };
-  }, []);
-  const { theme } = useTheme();
-  const backgroundColor = theme.background;
-  const inputColor = theme.input;
-  const commandMode = useCommandStore((state) => state.mode);
-
   const submitInput = () => {
     // Replace all instances of "_" with " " in commandMode
     let commandWithSpaces = commandMode.replace(/_/g, " ");
@@ -52,6 +35,20 @@ export default function ChatFooter(): JSX.Element {
       text: finalCommand,
     });
   };
+
+  useEffect(() => {
+    const textarea = document.getElementById("textarea") as HTMLTextAreaElement;
+    if (!textarea) return;
+    const adjustTextareaHeight = () => {
+      textarea.style.height = "auto";
+      textarea.style.height = textarea.scrollHeight + "px";
+    };
+    textarea.addEventListener("input", adjustTextareaHeight);
+    textarea.dispatchEvent(new Event("input"));
+    return () => {
+      textarea.removeEventListener("input", adjustTextareaHeight);
+    };
+  }, []);
 
   return (
     <div style={{ backgroundColor }} className="w-full bg-opacity-60 px-1">
