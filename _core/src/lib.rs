@@ -14,14 +14,16 @@ use utils::speak_gpt;
 #[derive(Debug)]
 pub struct AppState {
     pub playback_send: mpsc::Sender<PlaybackCommand>,
-    pub db: Surreal<surrealdb::engine::local::Db>,
+    pub chat_db: Surreal<surrealdb::engine::local::Db>,
+    pub audio_db: Surreal<surrealdb::engine::local::Db>,
 }
 
 impl Clone for AppState {
     fn clone(&self) -> Self {
         AppState {
             playback_send: self.playback_send.clone(),
-            db: self.db.clone(),
+            chat_db: self.chat_db.clone(), // Correctly clone the Arc<Mutex<_>>
+            audio_db: self.audio_db.clone(), // Correctly clone the Arc<Mutex<_>>
         }
     }
 }
@@ -30,8 +32,9 @@ impl Clone for AppState {
 
 pub async fn process_input(
     text: &str,
-    playback_send: &mpsc::Sender<PlaybackCommand>,
-    db: Surreal<surrealdb::engine::local::Db>,
+    // playback_send: &mpsc::Sender<PlaybackCommand>,
+    chat_db: Surreal<surrealdb::engine::local::Db>,
+    audio_db: Surreal<surrealdb::engine::local::Db>,
 ) -> Result<(), Box<dyn Error>> {
     let _ = match text {
         // input if input.starts_with("speak text") => {
@@ -39,13 +42,13 @@ pub async fn process_input(
         //     speak_text(&input[10..], "azure", playback_send).await
         // }
         input if input.starts_with("speak gpt") => {
-            let _ = add_chat_entry_to_db("user".to_owned(), &db, input[9..].to_owned()).await;
+            let _ = add_chat_entry_to_db("user".to_owned(), &chat_db, input[9..].to_owned()).await;
             speak_gpt(
                 input[9..].to_owned(),
-                db.clone(),
+                chat_db.clone(),
+                audio_db.clone(),
                 "ollama",
                 "azure",
-                playback_send,
             )
             .await
         }
@@ -71,7 +74,7 @@ pub struct ChatEntry {
 
 async fn add_chat_entry_to_db(
     source: String,
-    db: &Surreal<surrealdb::engine::local::Db>,
+    chat_db: &Surreal<surrealdb::engine::local::Db>,
     content: String,
 ) -> Result<(), Box<dyn Error>> {
     let content = ChatEntry {
@@ -79,8 +82,7 @@ async fn add_chat_entry_to_db(
         timestamp: Utc::now(),
         content,
     };
-    let _ = db.use_ns("user3").use_db("user3").await?;
-    let _: Option<Vec<ChatEntry>> = match db.create("chat").content(content).await {
+    let _: Option<Vec<ChatEntry>> = match chat_db.create("chat").content(content).await {
         Ok(records) => {
             records.clone().into_iter().next();
             Some(records)

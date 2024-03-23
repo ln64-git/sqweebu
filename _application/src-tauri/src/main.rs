@@ -3,9 +3,10 @@
 
 // region: --- imports
 use _core::playback::{init_playback_channel, PlaybackCommand};
+use _core::utils::listen_audio_database;
 use _core::{process_input, AppState, ChatEntry};
 use std::sync::Arc;
-use surrealdb::engine::local::RocksDb;
+use surrealdb::engine::local::{Mem, RocksDb};
 use surrealdb::Surreal;
 use tauri::api::path::data_dir;
 use tauri::Manager;
@@ -30,15 +31,29 @@ async fn main() {
     let data_dir = data_dir().unwrap(); // This assumes the operation won't fail
     let db_path = data_dir.join("sqweebu");
 
-    let db: Surreal<surrealdb::engine::local::Db> =
+    let chat_db: Surreal<surrealdb::engine::local::Db> =
         Surreal::new::<RocksDb>(db_path.to_str().unwrap())
             .await
             .unwrap();
-    let _ = db.use_ns("user3").use_db("user3").await;
+    let _ = chat_db.use_ns("user4").use_db("chat").await;
+
+    let audio_db = Surreal::new::<Mem>(()).await.unwrap();
+    let _ = audio_db.use_ns("user4").use_db("audio").await;
 
     let playback_send = init_playback_channel().await;
 
-    let nexus = Arc::new(Mutex::new(AppState { playback_send, db }));
+    let nexus = Arc::new(Mutex::new(AppState {
+        playback_send,
+        chat_db,
+        audio_db,
+    }));
+
+    let nexus_clone = nexus.clone();
+    tokio::spawn(async move {
+        if let Err(e) = listen_audio_database(nexus_clone).await {
+            eprintln!("Error listening to audio database: {:?}", e);
+        }
+    });
 
     tauri::Builder::default()
         .system_tray(system_tray)
@@ -64,8 +79,8 @@ async fn main() {
 #[tauri::command]
 async fn get_chat_updates(app: tauri::AppHandle) -> Result<String, String> {
     let nexus = get_nexus(app).await;
-    let db = &nexus.db;
-    let chat_entries_result = db.select("chat").await;
+    let chat_db = &nexus.chat_db;
+    let chat_entries_result = chat_db.select("chat").await;
     let chat_entries: Vec<ChatEntry> = match chat_entries_result {
         Ok(entries) => entries,
         Err(error) => return Err(format!("Database error: {:?}", error)),
@@ -102,11 +117,9 @@ async fn get_nexus(app: tauri::AppHandle) -> AppState {
 #[tauri::command]
 async fn process_input_from_frontend(text: String, app: tauri::AppHandle) -> Result<(), String> {
     let nexus = get_nexus(app).await;
-    let playback_send = nexus.playback_send;
-    let db = nexus.db;
-    // task::spawn(async move {
-    let _ = process_input(&text, &playback_send, db).await;
-    // });
+    let chat_db = nexus.chat_db;
+    let audio_db = nexus.audio_db;
+    let _ = process_input(&text, chat_db, audio_db.clone()).await;
     Ok(())
 }
 

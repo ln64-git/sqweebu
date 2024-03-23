@@ -41,7 +41,7 @@ export default function RootLayout({
 
   useEffect(() => {
     const getSentence = async () => {
-      let updatedSentence: string = await invoke("get_active_sentence");
+      let updatedSentence: string = await invoke("get_audio_updates");
       setActiveSentence(updatedSentence);
     };
     getSentence();
