@@ -21,7 +21,7 @@ impl Clone for AppState {
     fn clone(&self) -> Self {
         AppState {
             playback_send: self.playback_send.clone(),
-            db: self.db.clone(), // Clone the database connection as well
+            db: self.db.clone(),
         }
     }
 }
@@ -30,6 +30,7 @@ impl Clone for AppState {
 
 pub async fn process_input(
     text: &str,
+    playback_send: &mpsc::Sender<PlaybackCommand>,
     db: Surreal<surrealdb::engine::local::Db>,
 ) -> Result<(), Box<dyn Error>> {
     let _ = match text {
@@ -39,7 +40,14 @@ pub async fn process_input(
         // }
         input if input.starts_with("speak gpt") => {
             let _ = add_chat_entry_to_db("user".to_owned(), &db, input[9..].to_owned()).await;
-            speak_gpt(input[9..].to_owned(), "ollama", db.clone()).await
+            speak_gpt(
+                input[9..].to_owned(),
+                db.clone(),
+                "ollama",
+                "azure",
+                playback_send,
+            )
+            .await
         }
         _ => Ok(()),
     };

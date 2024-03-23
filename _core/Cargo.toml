@@ -11,6 +11,7 @@ _adapter = { path = "../_adapter" }
 rodio = "0.17.3"
 tokio = { version = "1.36.0", features = ["full"] }
 serde = { version = "1.0", features = ["derive"] }
-surrealdb = { version = "1.2.0", features = ["kv-rocksdb"] }
+surrealdb = { version = "1.2.0", features = ["kv-rocksdb", "kv-mem"] }
 tauri-api = "0.7.6"
 chrono = "0.4.35"
+base64 = "0.22.0"

@@ -36,14 +36,9 @@ async fn main() {
             .unwrap();
     let _ = db.use_ns("user3").use_db("user3").await;
 
-    // let db_clone = db.clone(); // Clone the db value
-    // let db_lock: Arc<Mutex<Surreal<surrealdb::engine::local::Db>>> = Arc::new(Mutex::new(db_clone)); // Use the cloned value
-
     let playback_send = init_playback_channel().await;
-    let nexus = Arc::new(Mutex::new(AppState {
-        playback_send: playback_send.clone(),
-        db,
-    }));
+
+    let nexus = Arc::new(Mutex::new(AppState { playback_send, db }));
 
     tauri::Builder::default()
         .system_tray(system_tray)
@@ -52,9 +47,8 @@ async fn main() {
             pause_playback_from_frontend,
             resume_playback_from_frontend,
             stop_playback_from_frontend,
-            fast_forward_playback_from_frontend,
             process_input_from_frontend,
-            get_chat_updates
+            get_chat_updates,
         ])
         .manage(nexus.clone())
         .build(tauri::generate_context!())
@@ -108,10 +102,10 @@ async fn get_nexus(app: tauri::AppHandle) -> AppState {
 #[tauri::command]
 async fn process_input_from_frontend(text: String, app: tauri::AppHandle) -> Result<(), String> {
     let nexus = get_nexus(app).await;
-    // let playback_send = nexus.playback_send;
+    let playback_send = nexus.playback_send;
     let db = nexus.db;
     // task::spawn(async move {
-    let _ = process_input(&text, db).await;
+    let _ = process_input(&text, &playback_send, db).await;
     // });
     Ok(())
 }
@@ -150,17 +144,6 @@ async fn stop_playback_from_frontend(app: tauri::AppHandle) -> Result<(), String
         nexus.playback_send.clone()
     };
     task::spawn(async move { playback_send.send(PlaybackCommand::Stop).await });
-    Ok(())
-}
-
-#[tauri::command]
-async fn fast_forward_playback_from_frontend(app: tauri::AppHandle) -> Result<(), String> {
-    let playback_send = {
-        let nexus_lock = app.state::<Arc<Mutex<AppState>>>();
-        let nexus = nexus_lock.lock().await;
-        nexus.playback_send.clone()
-    };
-    task::spawn(async move { playback_send.send(PlaybackCommand::FastForward).await });
     Ok(())
 }
 

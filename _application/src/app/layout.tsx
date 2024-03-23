@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Inter } from "next/font/google";
 import "../config/globals.css";
 import "@mantine/core/styles.css";
@@ -8,6 +8,7 @@ import Header from "@/components/header/header";
 import ChatFooter from "@/components/footer";
 import { LayoutProvider } from "@/components/utils/layout-provider";
 import { useDisplayStore } from "@/store/display-store";
+import { invoke } from "@tauri-apps/api";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -35,6 +36,19 @@ export default function RootLayout({
     return () =>
       scrollableElement?.removeEventListener("scroll", checkIfScrolledToBottom);
   }, []);
+
+  const [activeSentence, setActiveSentence] = useState("");
+
+  useEffect(() => {
+    const getSentence = async () => {
+      let updatedSentence: string = await invoke("get_active_sentence");
+      setActiveSentence(updatedSentence);
+    };
+    getSentence();
+    const intervalId = setInterval(getSentence, 5000);
+    console.log(activeSentence);
+    return () => clearInterval(intervalId);
+  });
 
   return (
     <html lang="en">

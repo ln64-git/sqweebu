@@ -18,8 +18,6 @@ pub enum PlaybackCommand {
     Pause,
     Stop,
     Resume,
-    FastForward,
-    Rewind,
     Clear,
 }
 
@@ -69,17 +67,6 @@ impl PlaybackManager {
                     sink.play();
                 }
             }
-            PlaybackCommand::FastForward => {
-                if let Some(ref mut sink) = self.sink {
-                    sink.skip_one();
-                }
-            }
-            PlaybackCommand::Rewind => {
-                if let Some(ref mut sink) = self.sink {
-                    // TODO
-                    sink.play();
-                }
-            }
             PlaybackCommand::Clear => {
                 if let Some(ref mut sink) = self.sink {
                     sink.clear();
@@ -94,14 +81,14 @@ pub async fn init_playback_channel() -> Sender<PlaybackCommand> {
     let (playback_send, playback_recv) = mpsc::channel::<PlaybackCommand>(32);
     let (queue_send, queue_recv) = mpsc::channel::<PlaybackCommand>(32);
 
-    tokio::spawn(playback_queue_thread(playback_recv, queue_send.clone()));
+    tokio::spawn(command_queue_processor(playback_recv, queue_send.clone()));
 
-    playback_command_thread(queue_recv);
+    playback_execution_thread(queue_recv);
 
     playback_send
 }
 
-async fn playback_queue_thread(
+async fn command_queue_processor(
     mut playback_recv: mpsc::Receiver<PlaybackCommand>,
     queue_send: mpsc::Sender<PlaybackCommand>,
 ) {
@@ -110,7 +97,7 @@ async fn playback_queue_thread(
     }
 }
 
-fn playback_command_thread(mut queue_recv: mpsc::Receiver<PlaybackCommand>) {
+fn playback_execution_thread(mut queue_recv: mpsc::Receiver<PlaybackCommand>) {
     std::thread::spawn(move || {
         let rt = tokio::runtime::Runtime::new().unwrap();
         let atomic_order = std::sync::atomic::Ordering::SeqCst;
@@ -119,6 +106,7 @@ fn playback_command_thread(mut queue_recv: mpsc::Receiver<PlaybackCommand>) {
             let sink = Sink::try_new(&stream_handle).unwrap();
 
             let mut playback = PlaybackManager::new(sink);
+
             while let Some(command) = queue_recv.recv().await {
                 playback.command_queue.push_back(command);
                 if playback.is_idle.load(atomic_order) {
