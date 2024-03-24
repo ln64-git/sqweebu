@@ -100,7 +100,6 @@ async fn command_queue_processor(
 fn playback_execution_thread(mut queue_recv: mpsc::Receiver<PlaybackCommand>) {
     std::thread::spawn(move || {
         let rt = tokio::runtime::Runtime::new().unwrap();
-        let atomic_order = std::sync::atomic::Ordering::SeqCst;
         rt.block_on(async {
             let (_stream, stream_handle) = OutputStream::try_default().unwrap();
             let sink = Sink::try_new(&stream_handle).unwrap();
@@ -109,11 +108,7 @@ fn playback_execution_thread(mut queue_recv: mpsc::Receiver<PlaybackCommand>) {
 
             while let Some(command) = queue_recv.recv().await {
                 playback.command_queue.push_back(command);
-                if playback.is_idle.load(atomic_order) {
-                    playback.is_idle.store(false, atomic_order);
-                    playback.process_command_queue().await;
-                    playback.is_idle.store(true, atomic_order);
-                }
+                playback.process_command_queue().await;
             }
         });
     });

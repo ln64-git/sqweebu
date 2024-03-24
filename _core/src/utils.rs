@@ -37,13 +37,24 @@ use std::sync::Arc;
 use tokio::sync::Mutex;
 
 pub async fn listen_audio_database(app_state: Arc<Mutex<AppState>>) -> Result<(), Box<dyn Error>> {
+    let mut last_played_index: i32 = 0; // Initialize with 0 or load this from a persisted source
+
     loop {
         let app_state_locked = app_state.lock().await;
         let audio_db = &app_state_locked.audio_db;
 
         match audio_db.select::<Vec<AudioEntry>>("audio").await {
-            Ok(audio_entries) => {
-                for entry in audio_entries {
+            Ok(mut audio_entries) => {
+                // Sort the audio_entries by their index in ascending order
+                audio_entries.sort_by_key(|entry| entry.index);
+
+                // Filter out entries that have already been played by checking against last_played_index
+                let new_audio_entries = audio_entries
+                    .into_iter()
+                    .filter(|entry| entry.index > last_played_index)
+                    .collect::<Vec<AudioEntry>>();
+
+                for entry in new_audio_entries {
                     let audio_data = BASE64_STANDARD
                         .decode(entry.audio_data.as_bytes())
                         .map_err(|e| Box::new(e) as Box<dyn Error>)?;
@@ -53,6 +64,10 @@ pub async fn listen_audio_database(app_state: Arc<Mutex<AppState>>) -> Result<()
                         .send(PlaybackCommand::Play(audio_data))
                         .await
                         .map_err(|e| Box::new(e) as Box<dyn Error>)?;
+
+                    println!("Played audio entry with index: {}", entry.index);
+                    // Update last_played_index with the index of the last played entry
+                    last_played_index = entry.index;
                 }
             }
             Err(e) => {
@@ -63,7 +78,7 @@ pub async fn listen_audio_database(app_state: Arc<Mutex<AppState>>) -> Result<()
         }
 
         drop(app_state_locked);
-        sleep(Duration::from_secs(5)).await;
+        // sleep(Duration::from_secs(5)).await; // Maintain this sleep to prevent constant querying
     }
 }
 
@@ -93,8 +108,9 @@ pub async fn speak_gpt(
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct AudioEntry {
+    index: i32,
     text_content: String,
-    audio_data: String, // Base64 encoded audio data
+    audio_data: String,
 }
 
 async fn add_audio_entry_to_db(
@@ -102,28 +118,37 @@ async fn add_audio_entry_to_db(
     encoded_data: String,
     audio_db: Surreal<surrealdb::engine::local::Db>,
 ) -> Result<(), Box<dyn Error>> {
-    // Construct the audio record with the text content and encoded audio data
+    let highest_index: i32 = get_highest_index(&audio_db).await?;
+    let new_index = highest_index + 1;
     let audio = AudioEntry {
+        index: new_index,
         text_content: text.to_string(),
         audio_data: encoded_data,
     };
-
-    // Insert the encoded audio data into the database
     let _: Result<Vec<AudioEntry>, Box<dyn Error>> = audio_db
         .create("audio")
         .content(&audio)
         .await
         .map_err(|e| e.into());
 
-    let _: Option<Vec<AudioEntry>> = match audio_db.create("audio").content(&audio).await {
-        Ok(records) => {
-            records.clone().into_iter().next();
-            Some(records)
+    Ok(())
+}
+
+async fn get_highest_index(
+    audio_db: &Surreal<surrealdb::engine::local::Db>,
+) -> Result<i32, Box<dyn Error>> {
+    let mut highest_index = 0;
+    match audio_db.select::<Vec<AudioEntry>>("audio").await {
+        Ok(audio_entries) => {
+            for entry in audio_entries {
+                if entry.index > highest_index {
+                    highest_index = entry.index
+                }
+            }
         }
         Err(e) => {
-            println!("PROCESS_INPUT - Error: {:?}", e);
-            None
+            eprintln!("Error querying audio entries: {}", e);
         }
-    };
-    Ok(())
+    }
+    Ok(highest_index)
 }
