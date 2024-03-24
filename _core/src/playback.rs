@@ -1,6 +1,7 @@
 // src/_utils/playback.rs
 
 // region: --- importswWE
+use base64::Engine;
 use core::sync::atomic::AtomicBool;
 use rodio::Decoder;
 use rodio::{OutputStream, Sink};
@@ -11,11 +12,13 @@ use std::error::Error;
 use std::io::Cursor;
 use std::sync::atomic::Ordering;
 use tokio::sync::mpsc::{self, Sender};
+
+use crate::utils::AudioEntry;
 // endregion: --- imports
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub enum PlaybackCommand {
-    Play(Vec<u8>),
+    Play(AudioEntry),
     Pause,
     Stop,
     Resume,
@@ -40,10 +43,10 @@ impl PlaybackManager {
     pub async fn process_command_queue(&mut self) {
         while let Some(command) = self.command_queue.pop_front() {
             match command {
-                PlaybackCommand::Play(audio_data) => {
+                PlaybackCommand::Play(entry) => {
                     if self.sink_empty.load(Ordering::SeqCst) {
-                        println!("PROCESS_COMMAND_QUEUE - !is_playing - Playing");
-                        self.handle_command(PlaybackCommand::Play(audio_data))
+                        println!("PROCESS_COMMAND_QUEUE - {:#?}", entry.text_content);
+                        self.handle_command(PlaybackCommand::Play(entry))
                             .await
                             .expect("Failed to handle command");
                     } else {
@@ -58,10 +61,16 @@ impl PlaybackManager {
             }
         }
     }
+
     pub async fn handle_command(&mut self, command: PlaybackCommand) -> Result<(), Box<dyn Error>> {
+        use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
         match command {
-            PlaybackCommand::Play(audio_data) => {
+            PlaybackCommand::Play(entry) => {
                 if let Some(ref mut sink) = self.sink {
+                    let audio_data = BASE64_STANDARD
+                        .decode(entry.audio_data.as_bytes())
+                        .map_err(|e| Box::new(e) as Box<dyn Error>)?;
+
                     let source = Decoder::new(Cursor::new(audio_data))?;
                     sink.append(source);
                     self.sink_empty.store(false, Ordering::SeqCst); // Set the playing flag

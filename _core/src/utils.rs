@@ -32,16 +32,15 @@ pub async fn speak_text(
     Ok(())
 }
 
-use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
-pub async fn listen_audio_database(app_state: Arc<Mutex<AppState>>) -> Result<(), Box<dyn Error>> {
+pub async fn listen_audio_database(nexus: Arc<Mutex<AppState>>) -> Result<(), Box<dyn Error>> {
     let mut last_played_index: i32 = 0; // Initialize with 0 or load this from a persisted source
 
     loop {
-        let app_state_locked = app_state.lock().await;
-        let audio_db = &app_state_locked.audio_db;
+        let nexus_locked = nexus.lock().await;
+        let audio_db = &nexus_locked.audio_db;
 
         match audio_db.select::<Vec<AudioEntry>>("audio").await {
             Ok(mut audio_entries) => {
@@ -55,13 +54,9 @@ pub async fn listen_audio_database(app_state: Arc<Mutex<AppState>>) -> Result<()
                     .collect::<Vec<AudioEntry>>();
 
                 for entry in new_audio_entries {
-                    let audio_data = BASE64_STANDARD
-                        .decode(entry.audio_data.as_bytes())
-                        .map_err(|e| Box::new(e) as Box<dyn Error>)?;
-
-                    app_state_locked
+                    nexus_locked
                         .playback_send
-                        .send(PlaybackCommand::Play(audio_data))
+                        .send(PlaybackCommand::Play(entry.clone()))
                         .await
                         .map_err(|e| Box::new(e) as Box<dyn Error>)?;
 
@@ -75,7 +70,7 @@ pub async fn listen_audio_database(app_state: Arc<Mutex<AppState>>) -> Result<()
             }
         }
 
-        drop(app_state_locked);
+        drop(nexus_locked);
         // sleep(Duration::from_secs(5)).await; // Maintain this sleep to prevent constant querying
     }
 }
@@ -106,9 +101,9 @@ pub async fn speak_gpt(
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct AudioEntry {
-    index: i32,
-    text_content: String,
-    audio_data: String,
+    pub index: i32,
+    pub text_content: String,
+    pub audio_data: String,
 }
 
 async fn add_audio_entry_to_db(
