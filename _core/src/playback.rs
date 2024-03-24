@@ -78,26 +78,15 @@ impl PlaybackManager {
 }
 
 pub async fn init_playback_channel() -> Sender<PlaybackCommand> {
-    let (playback_send, playback_recv) = mpsc::channel::<PlaybackCommand>(32);
-    let (queue_send, queue_recv) = mpsc::channel::<PlaybackCommand>(32);
+    let (playback_send, mut playback_recv) = mpsc::channel::<PlaybackCommand>(32);
+    let (queue_send, mut queue_recv) = mpsc::channel::<PlaybackCommand>(32);
 
-    tokio::spawn(command_queue_processor(playback_recv, queue_send.clone()));
+    tokio::spawn(async move {
+        while let Some(command) = playback_recv.recv().await {
+            let _ = queue_send.send(command).await;
+        }
+    });
 
-    playback_execution_thread(queue_recv);
-
-    playback_send
-}
-
-async fn command_queue_processor(
-    mut playback_recv: mpsc::Receiver<PlaybackCommand>,
-    queue_send: mpsc::Sender<PlaybackCommand>,
-) {
-    while let Some(command) = playback_recv.recv().await {
-        let _ = queue_send.send(command).await;
-    }
-}
-
-fn playback_execution_thread(mut queue_recv: mpsc::Receiver<PlaybackCommand>) {
     std::thread::spawn(move || {
         let rt = tokio::runtime::Runtime::new().unwrap();
         rt.block_on(async {
@@ -112,4 +101,6 @@ fn playback_execution_thread(mut queue_recv: mpsc::Receiver<PlaybackCommand>) {
             }
         });
     });
+
+    playback_send
 }
