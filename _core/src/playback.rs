@@ -9,6 +9,7 @@ use serde::Serialize;
 use std::collections::VecDeque;
 use std::error::Error;
 use std::io::Cursor;
+use std::sync::atomic::Ordering;
 use tokio::sync::mpsc::{self, Sender};
 // endregion: --- imports
 
@@ -23,7 +24,7 @@ pub enum PlaybackCommand {
 
 pub struct PlaybackManager {
     pub command_queue: VecDeque<PlaybackCommand>,
-    pub is_idle: AtomicBool,
+    pub sink_empty: AtomicBool,
     pub sink: Option<Sink>,
 }
 
@@ -31,25 +32,41 @@ impl PlaybackManager {
     pub fn new(sink: Sink) -> Self {
         PlaybackManager {
             command_queue: VecDeque::new(),
-            is_idle: AtomicBool::new(true),
+            sink_empty: AtomicBool::new(true),
             sink: Some(sink),
         }
     }
 
     pub async fn process_command_queue(&mut self) {
         while let Some(command) = self.command_queue.pop_front() {
-            self.handle_command(command)
-                .await
-                .expect("Failed to handle command");
+            match command {
+                PlaybackCommand::Play(audio_data) => {
+                    if self.sink_empty.load(Ordering::SeqCst) {
+                        println!("PROCESS_COMMAND_QUEUE - !is_playing - Playing");
+                        self.handle_command(PlaybackCommand::Play(audio_data))
+                            .await
+                            .expect("Failed to handle command");
+                    } else {
+                        break;
+                    }
+                }
+                _ => {
+                    self.handle_command(command)
+                        .await
+                        .expect("Failed to handle command");
+                }
+            }
         }
     }
-
     pub async fn handle_command(&mut self, command: PlaybackCommand) -> Result<(), Box<dyn Error>> {
         match command {
             PlaybackCommand::Play(audio_data) => {
                 if let Some(ref mut sink) = self.sink {
                     let source = Decoder::new(Cursor::new(audio_data))?;
                     sink.append(source);
+                    self.sink_empty.store(false, Ordering::SeqCst); // Set the playing flag
+                    sink.sleep_until_end();
+                    self.sink_empty.store(true, Ordering::SeqCst); // Reset the playing flag                }
                 }
             }
             PlaybackCommand::Pause => {

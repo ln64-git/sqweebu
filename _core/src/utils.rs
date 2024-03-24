@@ -65,8 +65,6 @@ pub async fn listen_audio_database(app_state: Arc<Mutex<AppState>>) -> Result<()
                         .await
                         .map_err(|e| Box::new(e) as Box<dyn Error>)?;
 
-                    println!("Played audio entry with index: {}", entry.index);
-                    // Update last_played_index with the index of the last played entry
                     last_played_index = entry.index;
                 }
             }
