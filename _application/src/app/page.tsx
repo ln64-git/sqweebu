@@ -8,7 +8,7 @@ import { useDisplayStore } from "@/store/display-store";
 export interface ChatEntry {
   source: string;
   timestamp: string;
-  content: string;
+  content: string[];
 }
 
 const MessageLog = () => {
@@ -42,20 +42,32 @@ const MessageLog = () => {
     return () => clearInterval(intervalId);
   }, []);
 
-  const processedMessages = messages.reduce<ChatEntry[]>((acc, message) => {
-    const lastMessage = acc[acc.length - 1];
-    if (
-      lastMessage &&
-      message.source === "gpt" &&
-      lastMessage.source === "gpt"
-    ) {
-      lastMessage.content += "\n" + message.content;
-      lastMessage.timestamp = message.timestamp;
-    } else {
-      acc.push({ ...message });
-    }
-    return acc;
-  }, []);
+  const processedMessages = messages.reduce<ChatEntry[]>(
+    (acc, currentMessage) => {
+      const lastMessage = acc[acc.length - 1];
+      if (
+        lastMessage &&
+        currentMessage.source === "gpt" &&
+        lastMessage.source === "gpt"
+      ) {
+        // Normalize currentMessage.content to always be an array
+        const contentToAdd = Array.isArray(currentMessage.content)
+          ? currentMessage.content
+          : [currentMessage.content];
+        // Now safely spread contentToAdd since it's guaranteed to be an array
+        lastMessage.content = [...lastMessage.content, ...contentToAdd];
+        lastMessage.timestamp = currentMessage.timestamp;
+      } else {
+        // For a new message, ensure content is treated as an array
+        const newContent = Array.isArray(currentMessage.content)
+          ? currentMessage.content
+          : [currentMessage.content];
+        acc.push({ ...currentMessage, content: newContent });
+      }
+      return acc;
+    },
+    []
+  );
 
   return (
     <div className="flex h-full mt-10 max-w-[580px] mx-auto overflow-y-auto">
