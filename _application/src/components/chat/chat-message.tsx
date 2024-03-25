@@ -1,12 +1,7 @@
 import React from "react";
 import { useTheme } from "../utils/theme-provider";
 import formatTimestamp from "@/utils/format-timestamp";
-
-interface ChatEntry {
-  source: string;
-  timestamp: string;
-  content: string;
-}
+import { ChatEntry } from "@/app/page";
 
 const ChatMessage: React.FC<ChatEntry> = ({ content, timestamp }) => {
   const { theme } = useTheme();
