@@ -1,6 +1,7 @@
 // src/_utils/playback.rs
 
 // region: --- importswWE
+use crate::utils::AudioEntry;
 use base64::Engine;
 use core::sync::atomic::AtomicBool;
 use rodio::Decoder;
@@ -12,8 +13,6 @@ use std::error::Error;
 use std::io::Cursor;
 use std::sync::atomic::Ordering;
 use tokio::sync::mpsc::{self, Sender};
-
-use crate::utils::AudioEntry;
 // endregion: --- imports
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -29,14 +28,16 @@ pub struct PlaybackManager {
     pub command_queue: VecDeque<PlaybackCommand>,
     pub sink_empty: AtomicBool,
     pub sink: Option<Sink>,
+    pub sentence_send: mpsc::Sender<String>,
 }
 
 impl PlaybackManager {
-    pub fn new(sink: Sink) -> Self {
+    pub fn new(sink: Sink, sentence_send: mpsc::Sender<String>) -> Self {
         PlaybackManager {
             command_queue: VecDeque::new(),
             sink_empty: AtomicBool::new(true),
             sink: Some(sink),
+            sentence_send,
         }
     }
 
@@ -44,9 +45,9 @@ impl PlaybackManager {
         while let Some(command) = self.command_queue.pop_front() {
             match command {
                 PlaybackCommand::Play(entry) => {
+                    let _ = self.sentence_send.send(entry.clone().text_content).await;
                     if self.sink_empty.load(Ordering::SeqCst) {
-                        println!("PROCESS_COMMAND_QUEUE - {:#?}", entry.text_content);
-                        self.handle_command(PlaybackCommand::Play(entry))
+                        self.handle_command(PlaybackCommand::Play(entry.clone()))
                             .await
                             .expect("Failed to handle command");
                     } else {
@@ -103,7 +104,7 @@ impl PlaybackManager {
     }
 }
 
-pub async fn init_playback_channel() -> Sender<PlaybackCommand> {
+pub async fn init_playback_channel(sentence_send: mpsc::Sender<String>) -> Sender<PlaybackCommand> {
     let (playback_send, mut playback_recv) = mpsc::channel::<PlaybackCommand>(32);
     let (queue_send, mut queue_recv) = mpsc::channel::<PlaybackCommand>(32);
 
@@ -119,7 +120,7 @@ pub async fn init_playback_channel() -> Sender<PlaybackCommand> {
             let (_stream, stream_handle) = OutputStream::try_default().unwrap();
             let sink = Sink::try_new(&stream_handle).unwrap();
 
-            let mut playback = PlaybackManager::new(sink);
+            let mut playback = PlaybackManager::new(sink, sentence_send);
 
             while let Some(command) = queue_recv.recv().await {
                 playback.command_queue.push_back(command);

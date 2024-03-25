@@ -9,6 +9,7 @@ import ChatFooter from "@/components/footer";
 import { LayoutProvider } from "@/components/utils/layout-provider";
 import { useDisplayStore } from "@/store/display-store";
 import { invoke } from "@tauri-apps/api";
+import { useCommandStore } from "@/store/command-store";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -37,19 +38,20 @@ export default function RootLayout({
       scrollableElement?.removeEventListener("scroll", checkIfScrolledToBottom);
   }, []);
 
-  const [activeSentence, setActiveSentence] = useState("");
+  const command = useCommandStore((state) => state.command);
 
   useEffect(() => {
     const getSentence = async () => {
-      let updatedSentence: string = await invoke("get_audio_updates");
-      setActiveSentence(updatedSentence);
+      if (command === "mic") {
+        console.log("getSentence - Getting sentence");
+        let sentence = await invoke("get_current_sentence");
+        console.log("getSentence - Retrived ->" + sentence + "<- ");
+      }
     };
     getSentence();
-    const intervalId = setInterval(getSentence, 5000);
-    console.log(activeSentence);
-    return () => clearInterval(intervalId);
-  });
+  }, [command]);
 
+  // get_sentence
   return (
     <html lang="en">
       <body className={inter.className}>

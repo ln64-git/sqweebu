@@ -5,8 +5,8 @@ pub mod utils;
 use chrono::{DateTime, Utc};
 use playback::PlaybackCommand;
 use serde::{Deserialize, Serialize};
-use std::error::Error;
-use tokio::sync::mpsc;
+use std::{error::Error, sync::Arc};
+use tokio::sync::{mpsc, Mutex};
 use utils::speak_gpt;
 // endregion: --- Region Title
 // region: --- AppState
@@ -14,6 +14,7 @@ use utils::speak_gpt;
 #[derive(Debug)]
 pub struct AppState {
     pub playback_send: mpsc::Sender<PlaybackCommand>,
+    pub current_sentence: Arc<Mutex<String>>,
     pub chat_db: Surreal<surrealdb::engine::local::Db>,
     pub audio_db: Surreal<surrealdb::engine::local::Db>,
 }
@@ -22,8 +23,9 @@ impl Clone for AppState {
     fn clone(&self) -> Self {
         AppState {
             playback_send: self.playback_send.clone(),
-            chat_db: self.chat_db.clone(), // Correctly clone the Arc<Mutex<_>>
-            audio_db: self.audio_db.clone(), // Correctly clone the Arc<Mutex<_>>
+            current_sentence: self.current_sentence.clone(),
+            chat_db: self.chat_db.clone(),
+            audio_db: self.audio_db.clone(),
         }
     }
 }

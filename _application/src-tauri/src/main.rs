@@ -13,7 +13,7 @@ use tauri::Manager;
 use tauri::SystemTray;
 use tauri::SystemTrayEvent;
 use tauri::{CustomMenuItem, SystemTrayMenu};
-use tokio::sync::Mutex;
+use tokio::sync::{mpsc, Mutex};
 use tokio::task;
 // endregion: --- imports
 
@@ -40,13 +40,30 @@ async fn main() {
     let audio_db = Surreal::new::<Mem>(()).await.unwrap();
     let _ = audio_db.use_ns("user4").use_db("audio").await;
 
-    let playback_send = init_playback_channel().await;
+    let (sentence_send, sentence_recv) = mpsc::channel::<String>(32);
+    let sentence_recv_arc = Arc::new(Mutex::new(sentence_recv));
+
+    let playback_send = init_playback_channel(sentence_send).await;
 
     let nexus = Arc::new(Mutex::new(AppState {
         playback_send,
+        current_sentence: Arc::new(Mutex::new("".to_string())),
         chat_db,
         audio_db,
     }));
+
+    let nexus_clone = nexus.clone();
+    let sentence_recv_clone = sentence_recv_arc.clone(); // Assuming you intended to share an Arc<Mutex<Receiver>>
+    tokio::spawn(async move {
+        println!("Listening for sentences...");
+        while let Some(sentence) = sentence_recv_clone.lock().await.recv().await {
+            println!("Sentence Found: {}", sentence);
+            let app_state = nexus_clone.lock().await;
+            let mut current_sentence = app_state.current_sentence.lock().await;
+            *current_sentence = sentence.clone();
+            println!("Updated current_sentence");
+        }
+    });
 
     let nexus_clone = nexus.clone();
     tokio::spawn(async move {
@@ -64,6 +81,8 @@ async fn main() {
             stop_playback_from_frontend,
             process_input_from_frontend,
             get_chat_updates,
+            get_current_sentence,
+            get_sentence_2
         ])
         .manage(nexus.clone())
         .build(tauri::generate_context!())
@@ -74,6 +93,22 @@ async fn main() {
             }
             _ => {}
         });
+}
+
+#[tauri::command]
+async fn get_current_sentence(app: tauri::AppHandle) -> Result<String, String> {
+    let app_state = get_nexus(app).await;
+    let current_sentence = app_state.current_sentence.lock().await;
+    if *current_sentence == "" {
+        Ok("No Currently Selected Sentence".to_string())
+    } else {
+        Ok(current_sentence.clone())
+    }
+}
+
+#[tauri::command]
+async fn get_sentence_2(_app: tauri::AppHandle) -> String {
+    "this is a sentence".to_string()
 }
 
 #[tauri::command]
