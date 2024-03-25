@@ -35,10 +35,10 @@ async fn main() {
         Surreal::new::<RocksDb>(db_path.to_str().unwrap())
             .await
             .unwrap();
-    let _ = chat_db.use_ns("user4").use_db("chat").await;
+    let _ = chat_db.use_ns("user5").use_db("chat").await;
 
     let audio_db = Surreal::new::<Mem>(()).await.unwrap();
-    let _ = audio_db.use_ns("user4").use_db("audio").await;
+    let _ = audio_db.use_ns("user5").use_db("audio").await;
 
     let (sentence_send, sentence_recv) = mpsc::channel::<String>(32);
     let sentence_recv_arc = Arc::new(Mutex::new(sentence_recv));

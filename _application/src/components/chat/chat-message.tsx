@@ -3,7 +3,7 @@ import { useTheme } from "../utils/theme-provider";
 import formatTimestamp from "@/utils/format-timestamp";
 import { ChatEntry } from "@/app/page";
 
-const ChatMessage: React.FC<ChatEntry> = ({ content, timestamp }) => {
+const ChatMessage = (message: ChatEntry) => {
   const { theme } = useTheme();
   const inputColor = theme.overlay;
   const textSecondary = theme.textSecondary;
@@ -16,10 +16,10 @@ const ChatMessage: React.FC<ChatEntry> = ({ content, timestamp }) => {
             className="flex flex-col leading-1.5 p-4 opacity-60 rounded-e-xl rounded-es-xl "
           >
             <p style={{ color: textSecondary, fontSize: "8px" }}>
-              {formatTimestamp(timestamp)}
+              {formatTimestamp(message.timestamp)}
             </p>
             <p className="text-sm font-normal" style={{ color: textSecondary }}>
-              {content}
+              {message.content}
             </p>
           </div>
         </div>

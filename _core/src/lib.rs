@@ -69,9 +69,10 @@ pub async fn process_response(
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ChatEntry {
-    source: String,
-    timestamp: DateTime<Utc>,
-    content: String,
+    pub index: i32,
+    pub source: String,
+    pub timestamp: DateTime<Utc>,
+    pub content: String,
 }
 
 async fn add_chat_entry_to_db(
@@ -79,20 +80,41 @@ async fn add_chat_entry_to_db(
     chat_db: &Surreal<surrealdb::engine::local::Db>,
     content: String,
 ) -> Result<(), Box<dyn Error>> {
-    let content = ChatEntry {
+    let latest_index = get_latest_index(chat_db).await?;
+    let new_index = latest_index + 1;
+
+    let entry = ChatEntry {
+        index: new_index,
         source,
         timestamp: Utc::now(),
         content,
     };
-    let _: Option<Vec<ChatEntry>> = match chat_db.create("chat").content(content).await {
+
+    let _: Option<Vec<ChatEntry>> = match chat_db.create("chat").content(entry).await {
         Ok(records) => {
             records.clone().into_iter().next();
             Some(records)
         }
         Err(e) => {
-            println!("PROCESS_INPUT - Error: {:?}", e);
+            println!("Error adding chat entry to DB: {:?}", e);
             None
         }
     };
     Ok(())
+}
+
+async fn get_latest_index(
+    chat_db: &Surreal<surrealdb::engine::local::Db>,
+) -> Result<i32, Box<dyn Error>> {
+    let chat_entries_result = chat_db.select::<Vec<ChatEntry>>("chat").await;
+    match chat_entries_result {
+        Ok(chat_entries) => {
+            if let Some(max_entry) = chat_entries.iter().max_by_key(|entry| entry.index) {
+                Ok(max_entry.index)
+            } else {
+                Ok(0) // Return 0 if no entries are found
+            }
+        }
+        Err(e) => Err(Box::new(e)),
+    }
 }

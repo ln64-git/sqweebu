@@ -1,22 +1,28 @@
 import React from "react";
 import { ChatEntry } from "@/app/page";
 import { useTheme } from "../utils/theme-provider";
+import { invoke } from "@tauri-apps/api";
 
-const ResponseMessage: React.FC<ChatEntry> = ({ content }) => {
+const ResponseMessage = (message: ChatEntry) => {
   const { theme } = useTheme();
   const textPrimary = theme.textPrimary;
-  const textSecondary = theme.textSecondary; // Corrected to use textSecondary
+  const textSecondary = theme.textSecondary;
 
-  const handleClick = (index: number) => {
-    console.log(content[index]);
+  const handleClick = (message: ChatEntry) => {
+    const getData = async () => {
+      let data = await invoke("get_current_sentence");
+      console.log(data);
+    };
+    getData();
+    console.log("clicked");
   };
 
   return (
     <div className="mx-2 text-sm">
-      {content.map((text, index) => (
+      {message.content.map((text, index) => (
         <React.Fragment key={index}>
           <span
-            onClick={() => handleClick(index)}
+            onClick={() => handleClick(message)}
             className="cursor-pointer"
             style={{
               color: textPrimary,
