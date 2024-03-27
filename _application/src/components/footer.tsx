@@ -18,9 +18,7 @@ export default function ChatFooter(): JSX.Element {
     setInputValue(event.target.value);
   };
 
-  const handleEnterSubmit = (
-    event: React.KeyboardEvent<HTMLTextAreaElement>
-  ) => {
+  const handleEnterSubmit = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
       submitInput();
@@ -41,14 +39,13 @@ export default function ChatFooter(): JSX.Element {
     const adjustTextareaHeight = () => {
       if (!textareaRef.current) return;
       textareaRef.current.style.height = "auto";
-      textareaRef.current.style.height =
-        textareaRef.current.scrollHeight + "px";
+      textareaRef.current.style.height = textareaRef.current.scrollHeight + "px";
     };
 
     // Attach input event listener
     const textarea = textareaRef.current;
     textarea?.addEventListener("input", adjustTextareaHeight);
-
+    
     // Manually trigger adjustment in case of initial content
     adjustTextareaHeight();
 
@@ -56,11 +53,11 @@ export default function ChatFooter(): JSX.Element {
     return () => {
       textarea?.removeEventListener("input", adjustTextareaHeight);
     };
-  }, []); // Empty dependency array ensures this effect runs only once on mount
+  }, ); // Empty dependency array ensures this effect runs only once on mount
 
   return (
-    <div style={{ backgroundColor }} className="w-full bg-opacity-60 px-1 ">
-      <div className="max-w-[460px]  mx-auto pt-1.5 pb-2  flex  ">
+    <div style={{ backgroundColor }} className="w-full bg-opacity-60 px-1">
+      <div className="max-w-[460px] mx-auto pt-1.5 pb-2  flex  ">
         <div className="flex justify-between mx-1 items-center cursor-pointer"></div>
         <div
           style={{ backgroundColor: inputColor }}
