@@ -41,7 +41,6 @@ async fn main() {
     let _ = audio_db.use_ns("user7").use_db("audio").await;
 
     let (sentence_send, sentence_recv) = mpsc::channel::<String>(32);
-    let sentence_recv_arc = Arc::new(Mutex::new(sentence_recv));
 
     let playback_send = init_playback_channel(sentence_send).await;
 
@@ -52,10 +51,10 @@ async fn main() {
         audio_db,
     }));
 
+    let sentence_recv_arc = Arc::new(Mutex::new(sentence_recv));
     let nexus_clone = nexus.clone();
-    let sentence_recv_clone = sentence_recv_arc.clone(); // Assuming you intended to share an Arc<Mutex<Receiver>>
     tokio::spawn(async move {
-        while let Some(sentence) = sentence_recv_clone.lock().await.recv().await {
+        while let Some(sentence) = sentence_recv_arc.lock().await.recv().await {
             let app_state = nexus_clone.lock().await;
             let mut current_sentence = app_state.current_sentence.lock().await;
             *current_sentence = sentence.clone();
@@ -95,11 +94,7 @@ async fn main() {
 async fn get_current_sentence(app: tauri::AppHandle) -> Result<String, String> {
     let app_state = get_nexus(app).await;
     let current_sentence = app_state.current_sentence.lock().await;
-    if *current_sentence == "" {
-        Ok("No Currently Selected Sentence".to_string())
-    } else {
-        Ok(current_sentence.clone())
-    }
+    Ok(current_sentence.clone())
 }
 
 #[tauri::command]
@@ -155,12 +150,17 @@ async fn process_input_from_frontend(text: String, app: tauri::AppHandle) -> Res
 
 #[tauri::command]
 async fn pause_playback_from_frontend(app: tauri::AppHandle) -> Result<(), String> {
-    let playback_send = {
-        let nexus_lock = app.state::<Arc<Mutex<AppState>>>();
-        let nexus = nexus_lock.lock().await;
-        nexus.playback_send.clone()
-    };
-    task::spawn(async move { playback_send.send(PlaybackCommand::Pause).await });
+    println!("PAUSE_PLAYBACK_FROM_FRONTEND - Function Called");
+    let nexus = get_nexus(app).await;
+    let playback_send = nexus.playback_send.clone();
+    let current_sentence = nexus.current_sentence.lock().await.clone();
+    task::spawn(async move {
+        println!("PAUSE_PLAYBACK_FROM_FRONTEND - Task Spawn");
+        let _ = playback_send
+            .send(PlaybackCommand::Pause(current_sentence))
+            .await;
+    });
+
     Ok(())
 }
 

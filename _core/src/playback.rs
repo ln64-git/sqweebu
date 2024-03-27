@@ -13,12 +13,12 @@ use std::error::Error;
 use std::io::Cursor;
 use std::sync::atomic::Ordering;
 use tokio::sync::mpsc::{self, Sender};
-// endregion: --- imports
+use tokio::time::{self, Duration}; // endregion: --- imports
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub enum PlaybackCommand {
     Play(AudioEntry),
-    Pause,
+    Pause(String),
     Stop,
     Resume,
     Clear,
@@ -29,16 +29,22 @@ pub struct PlaybackManager {
     pub sink_empty: AtomicBool,
     pub sink: Option<Sink>,
     pub sentence_send: mpsc::Sender<String>,
+    pub sentence_storage_send: mpsc::Sender<String>,
+    pub sentence_storage_recv: mpsc::Receiver<String>,
     pub is_idle: AtomicBool,
 }
 
 impl PlaybackManager {
     pub fn new(sink: Sink, sentence_send: mpsc::Sender<String>) -> Self {
+        let (sentence_storage_send, sentence_storage_recv) = mpsc::channel::<String>(32);
+
         PlaybackManager {
             command_queue: VecDeque::new(),
             sink_empty: AtomicBool::new(true),
             sink: Some(sink),
             sentence_send,
+            sentence_storage_send,
+            sentence_storage_recv,
             is_idle: AtomicBool::new(true),
         }
     }
@@ -55,6 +61,32 @@ impl PlaybackManager {
                     } else {
                         break;
                     }
+                }
+                PlaybackCommand::Stop => {
+                    let _ = self.sentence_send.send("".to_string()).await;
+                }
+                PlaybackCommand::Pause(entry) => {
+                    println!("PlaybackCommand::Pause - Start");
+                    let _ = self.sentence_storage_send.send(entry.clone()).await;
+                    let _ = self.sentence_send.send("".to_string()).await;
+                    println!("PlaybackCommand::Pause - Complete");
+                }
+                PlaybackCommand::Resume => {
+                    println!("PlaybackCommand::Resume - Start");
+                    let sentence_storage_result =
+                        time::timeout(Duration::from_secs(5), self.sentence_storage_recv.recv())
+                            .await;
+
+                    let sentence_storage = match sentence_storage_result {
+                        Ok(Some(sentence)) => sentence, // Received a sentence before timeout
+                        Ok(None) => "".to_string(),     // Channel closed, no more messages
+                        Err(_) => {
+                            println!("Timeout occurred waiting for sentence_storage_recv");
+                            "".to_string() // Timeout occurred
+                        }
+                    };
+                    println!("PlaybackCommand::Resume - Complete");
+                    println!("{:#?}", sentence_storage);
                 }
                 _ => {
                     self.handle_command(command)
@@ -80,7 +112,7 @@ impl PlaybackManager {
                     self.sink_empty.store(true, Ordering::SeqCst); // Reset the playing flag                }
                 }
             }
-            PlaybackCommand::Pause => {
+            PlaybackCommand::Pause(_entry) => {
                 if let Some(ref mut sink) = self.sink {
                     println!("PAUSE - fucntion called.");
                     sink.pause();
