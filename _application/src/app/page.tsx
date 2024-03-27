@@ -4,7 +4,6 @@ import { invoke } from "@tauri-apps/api";
 import ChatMessage from "@/components/chat/chat-message";
 import ResponseMessage from "@/components/chat/chat-response-message";
 import { useDisplayStore } from "@/store/display-store";
-import { useStore } from "zustand";
 import { useScrollContext } from "@/utils/scroll-context";
 
 export interface ChatEntry {
