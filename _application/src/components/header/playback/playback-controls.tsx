@@ -14,22 +14,21 @@ const PlaybackControls = () => {
 
   useEffect(() => {
     const getCurrentSentence = async () => {
-      const result = await invoke("get_current_sentence");
-      console.log(result);
-      if (result === "") {
-        console.log("true");
-        setIsPlaying(false);
-      } else {
-        console.log("true");
-        setIsPlaying(true);
+      try {
+        const result = await invoke("get_current_sentence");
+        console.log(result);
+        setIsPlaying(result !== "");
+      } catch (error) {
+        console.error("Error fetching current sentence:", error);
       }
     };
-    getCurrentSentence();
-  });
 
-  // const togglePlay = () => {
-  //   setIsPlaying(!isPlaying);
-  // };
+    // Poll for current sentence every 1 second
+    const intervalId = setInterval(getCurrentSentence, 100);
+
+    // Cleanup on component unmount
+    return () => clearInterval(intervalId);
+  }, []); // Empty dependency array means this runs once on mount
 
   const toggleMute = () => {
     setIsMuted(!isMuted);
@@ -37,19 +36,15 @@ const PlaybackControls = () => {
 
   var display = viewWidth > 200;
 
-  if (display) {
-    return (
-      <div className="flex px-4 w-[156px] fixed right-0 h-[40px]">
-        <StopButton onClick={() => {}} />
-        <RewindButton onClick={() => {}} />
-        <PlayButton isPlaying={isPlaying} />
-        <FastForwardButton onClick={() => {}} />
-        <VolumeButton isMuted={isMuted} onClick={toggleMute} />
-      </div>
-    );
-  } else {
-    return;
-  }
+  return display ? (
+    <div className="flex px-4 w-[156px] fixed right-0 h-[40px]">
+      <StopButton onClick={() => {}} />
+      <RewindButton onClick={() => {}} />
+      <PlayButton isPlaying={isPlaying} />
+      <FastForwardButton onClick={() => {}} />
+      <VolumeButton isMuted={isMuted} onClick={toggleMute} />
+    </div>
+  ) : null;
 };
 
 export default PlaybackControls;
