@@ -10,6 +10,7 @@ import { LayoutProvider } from "@/components/utils/layout-provider";
 import { useDisplayStore } from "@/store/display-store";
 import { invoke } from "@tauri-apps/api";
 import { useCommandStore } from "@/store/command-store";
+import ScrollContext from "@/utils/scroll-context";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -70,9 +71,11 @@ export default function RootLayout({
           <div className="flex h-full fixed left-0 right-0 bottom-0">
             <SideBar />
             <div className="h-full flex flex-col w-full justify-between mx-auto">
-              <div ref={scrollRef} className="overflow-y-auto  flex-1">
-                {children}
-              </div>
+              <ScrollContext.Provider value={scrollRef}>
+                <div ref={scrollRef} className="overflow-y-auto  flex-1">
+                  {children}
+                </div>
+              </ScrollContext.Provider>
               <ChatFooter />
             </div>
           </div>

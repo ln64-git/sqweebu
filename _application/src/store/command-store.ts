@@ -8,7 +8,7 @@ interface CommandStore {
 }
 
 export const useCommandStore = create<CommandStore>((set) => ({
-  mode: "",
+  mode: "speak_gpt",
   command: "", 
   setMode: (mode) => {
     set(() => ({ mode })); 

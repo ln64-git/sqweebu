@@ -112,7 +112,7 @@ function CommandBlock({
   const commandMode = useCommandStore((state) => state.mode);
   const setMode = useCommandStore((state) => state.setMode);
   const isChecked = commandMode === alt;
-
+  console.log(alt);
   function handleClick() {
     console.log("clicked");
     if (checkbox === true && commandMode != alt) {

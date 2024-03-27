@@ -4,6 +4,8 @@ import { invoke } from "@tauri-apps/api";
 import ChatMessage from "@/components/chat/chat-message";
 import ResponseMessage from "@/components/chat/chat-response-message";
 import { useDisplayStore } from "@/store/display-store";
+import { useStore } from "zustand";
+import { useScrollContext } from "@/utils/scroll-context";
 
 export interface ChatEntry {
   source: string;
@@ -13,35 +15,43 @@ export interface ChatEntry {
 
 const MessageLog = () => {
   const [messages, setMessages] = useState<ChatEntry[]>([]);
-  const messagesEndRef = useRef<HTMLDivElement>(null); // Reference for scrolling
-
+  const [initialLoad, setInitialLoad] = useState(true); // Flag to track the initial load
   const scrollBottom = useDisplayStore((state) => state.scrollBottom);
-
+  const scrollRef = useScrollContext();
+  
+  // Handle automatic scrolling
   useEffect(() => {
-    // Scroll to the bottom whenever messages change
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (scrollBottom || initialLoad) {
+      if (scrollRef != null) {
+        scrollRef.current?.scrollTo({
+          top: scrollRef.current.scrollHeight,
+          behavior: "instant",
+        });
+      }
+    }
   }, [messages]); // Depend on messages to trigger scroll
 
   useEffect(() => {
     const getData = async () => {
       try {
         const jsonString: string = await invoke("get_chat_updates");
-        let data: ChatEntry[] = JSON.parse(jsonString);
-        data = data.sort((a, b) => {
+        const data: ChatEntry[] = JSON.parse(jsonString);
+        const sortedData = data.sort((a, b) => {
           const dateA = new Date(a.timestamp.replace(" at ", " "));
           const dateB = new Date(b.timestamp.replace(" at ", " "));
           return dateA.getTime() - dateB.getTime();
         });
-        setMessages(data);
-        // Scroll to bottom after messages are loaded
-        messagesEndRef.current?.scrollIntoView({ behavior: "instant" });
+        setMessages(sortedData);
+        if (initialLoad) {
+          setInitialLoad(false); // After initial load, set flag to false
+        }
       } catch (error) {
         console.error("Failed to fetch chat updates:", error);
       }
     };
     getData();
     // Set an interval for live updates if needed. Adjust the interval as needed.
-    const intervalId = setInterval(getData, 0); // Example: 10 seconds
+    const intervalId = setInterval(getData, 300); // Example: 10 seconds
     return () => clearInterval(intervalId);
   }, []);
 
@@ -73,7 +83,7 @@ const MessageLog = () => {
   );
 
   return (
-    <div className="flex h-full mt-10 max-w-[580px] mx-auto">
+    <div className="flex h-full  mt-10 max-w-[580px] mx-auto">
       <div className="flex-1 px-4 text-zinc-400 mt-1.5 gap-2">
         <ul>
           {processedMessages.map((message, index) => (
@@ -93,8 +103,6 @@ const MessageLog = () => {
               )}
             </div>
           ))}
-          {/* This div is used as an anchor to scroll into view */}
-          <div ref={messagesEndRef} />
         </ul>
       </div>
     </div>
