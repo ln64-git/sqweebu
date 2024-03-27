@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useLayoutEffect } from "react";
 import { invoke } from "@tauri-apps/api";
 import ChatMessage from "@/components/chat/chat-message";
 import ResponseMessage from "@/components/chat/chat-response-message";
@@ -18,7 +18,22 @@ const MessageLog = () => {
   const [initialLoad, setInitialLoad] = useState(true); // Flag to track the initial load
   const scrollBottom = useDisplayStore((state) => state.scrollBottom);
   const scrollRef = useScrollContext();
-  
+
+  useLayoutEffect(() => {
+    if (scrollBottom || initialLoad) {
+      if (scrollRef != null) {
+        if (scrollRef.current) {
+          requestAnimationFrame(() => {
+            scrollRef.current?.scrollTo({
+              top: scrollRef.current.scrollHeight,
+              behavior: "instant",
+            });
+          });
+        }
+      }
+    }
+  }, [scrollBottom, initialLoad, messages]);
+
   // Handle automatic scrolling
   useEffect(() => {
     if (scrollBottom || initialLoad) {
