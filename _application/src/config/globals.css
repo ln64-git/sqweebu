@@ -9,3 +9,7 @@
 }
 
 /* Enable custom scrollbar styling */
+
+textarea {
+  box-sizing: border-box; /* Include padding in the height calculation */
+}

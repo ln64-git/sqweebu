@@ -68,7 +68,7 @@ export default function RootLayout({
       <body className={inter.className}>
         <LayoutProvider>
           <Header />
-          <div className="flex h-full fixed left-0 right-0 bottom-0">
+          <div className=" flex h-full fixed left-0 right-0 bottom-0">
             <SideBar />
             <div className="h-full flex flex-col w-full justify-between mx-auto">
               <ScrollContext.Provider value={scrollRef}>
