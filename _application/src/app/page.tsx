@@ -12,20 +12,15 @@ export interface ChatEntry {
 }
 
 const MessageLog = () => {
-  let [currentSentence, setCurrentSentence] = useState<String>("");
-  let [messages, setMessages] = useState<ChatEntry[]>([]);
-  let [liveMessages, setLiveMessages] = useState<ChatEntry[]>([]);
-  let messagesEndRef = useRef<HTMLDivElement>(null); // Step 1: Assign a Ref
-  let scrollBottom = useDisplayStore((state) => state.scrollBottom);
+  const [messages, setMessages] = useState<ChatEntry[]>([]);
+  const messagesEndRef = useRef<HTMLDivElement>(null); // Reference for scrolling
+
+  const scrollBottom = useDisplayStore((state) => state.scrollBottom);
 
   useEffect(() => {
-    const getData = async () => {
-      let data: string = await invoke("get_current_sentence");
-      setCurrentSentence(data);
-    };
-    getData();
-    console.log(currentSentence);
-  });
+    // Scroll to the bottom whenever messages change
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]); // Depend on messages to trigger scroll
 
   useEffect(() => {
     const getData = async () => {
@@ -38,58 +33,19 @@ const MessageLog = () => {
           return dateA.getTime() - dateB.getTime();
         });
         setMessages(data);
+        // Scroll to bottom after messages are loaded
+        messagesEndRef.current?.scrollIntoView({ behavior: "instant" });
       } catch (error) {
         console.error("Failed to fetch chat updates:", error);
       }
     };
     getData();
-  });
+    // Set an interval for live updates if needed. Adjust the interval as needed.
+    const intervalId = setInterval(getData, 0); // Example: 10 seconds
+    return () => clearInterval(intervalId);
+  }, []);
 
-  useEffect(() => {
-    if (messages.length > 0) {
-      const latestChatEntry = messages[messages.length - 1];
-      if (
-        latestChatEntry.source === "user" ||
-        currentSentence === "No Currently Selected Sentence"
-      ) {
-        setLiveMessages(messages);
-      }
-
-      // This function finds the index of the message that matches the currentSentence.
-      // It returns -1 if no match is found.
-      const findMatchingSentenceIndex = () => {
-        for (let i = messages.length - 1; i >= 0; i--) {
-          const entry = messages[i];
-          if (
-            entry.source === "gpt" &&
-            entry.content.includes(currentSentence.toString())
-          ) {
-            return i;
-          }
-        }
-        return -1; // Return -1 if no match is found
-      };
-
-      const matchingIndex = findMatchingSentenceIndex();
-
-      // If a matching sentence is found in the backlog, update liveMessages to include
-      // messages up to and including the matching message.
-      if (matchingIndex !== -1) {
-        // Set liveMessages to include all messages up to and including the match
-        const updatedLiveMessages = messages.slice(0, matchingIndex + 1);
-        setLiveMessages(updatedLiveMessages);
-        console.log(
-          "Match found in backlog, updating liveMessages up to currentSentence"
-        );
-      } else {
-        // If there's no match but the latest message is from the user or there's no currently speaking sentence,
-        // consider setting liveMessages based on specific app logic. For example, you might not update liveMessages
-        // at all if you only want to update when there's a match.
-      }
-    }
-  }, [messages, currentSentence]); // Depend on messages and currentSentence
-
-  const processedMessages = liveMessages.reduce<ChatEntry[]>(
+  const processedMessages = messages.reduce<ChatEntry[]>(
     (acc, currentMessage) => {
       const lastMessage = acc[acc.length - 1];
       if (
@@ -97,12 +53,15 @@ const MessageLog = () => {
         currentMessage.source === "gpt" &&
         lastMessage.source === "gpt"
       ) {
+        // Normalize currentMessage.content to always be an array
         const contentToAdd = Array.isArray(currentMessage.content)
           ? currentMessage.content
           : [currentMessage.content];
+        // Now safely spread contentToAdd since it's guaranteed to be an array
         lastMessage.content = [...lastMessage.content, ...contentToAdd];
         lastMessage.timestamp = currentMessage.timestamp;
       } else {
+        // For a new message, ensure content is treated as an array
         const newContent = Array.isArray(currentMessage.content)
           ? currentMessage.content
           : [currentMessage.content];
@@ -113,25 +72,28 @@ const MessageLog = () => {
     []
   );
 
-  useEffect(() => {
-    if (scrollBottom) {
-      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    }
-  }, [scrollBottom, messages]);
-
   return (
-    <div className="flex h-full mt-10 max-w-[580px] mx-auto overflow-y-auto">
+    <div className="flex h-full mt-10 max-w-[580px] mx-auto">
       <div className="flex-1 px-4 text-zinc-400 mt-1.5 gap-2">
         <ul>
           {processedMessages.map((message, index) => (
             <div className="py-1" key={index}>
               {message.source === "user" ? (
-                <ChatMessage {...message} />
+                <ChatMessage
+                  source={message.source}
+                  content={message.content}
+                  timestamp={message.timestamp}
+                />
               ) : (
-                <ResponseMessage {...message} />
+                <ResponseMessage
+                  source={message.source}
+                  content={message.content}
+                  timestamp={message.timestamp}
+                />
               )}
             </div>
           ))}
+          {/* This div is used as an anchor to scroll into view */}
           <div ref={messagesEndRef} />
         </ul>
       </div>

@@ -35,10 +35,10 @@ async fn main() {
         Surreal::new::<RocksDb>(db_path.to_str().unwrap())
             .await
             .unwrap();
-    let _ = chat_db.use_ns("user5").use_db("chat").await;
+    let _ = chat_db.use_ns("user7").use_db("chat").await;
 
     let audio_db = Surreal::new::<Mem>(()).await.unwrap();
-    let _ = audio_db.use_ns("user5").use_db("audio").await;
+    let _ = audio_db.use_ns("user7").use_db("audio").await;
 
     let (sentence_send, sentence_recv) = mpsc::channel::<String>(32);
     let sentence_recv_arc = Arc::new(Mutex::new(sentence_recv));
@@ -55,13 +55,10 @@ async fn main() {
     let nexus_clone = nexus.clone();
     let sentence_recv_clone = sentence_recv_arc.clone(); // Assuming you intended to share an Arc<Mutex<Receiver>>
     tokio::spawn(async move {
-        println!("Listening for sentences...");
         while let Some(sentence) = sentence_recv_clone.lock().await.recv().await {
-            println!("Sentence Found: {}", sentence);
             let app_state = nexus_clone.lock().await;
             let mut current_sentence = app_state.current_sentence.lock().await;
             *current_sentence = sentence.clone();
-            println!("Updated current_sentence");
         }
     });
 
@@ -82,7 +79,6 @@ async fn main() {
             process_input_from_frontend,
             get_chat_updates,
             get_current_sentence,
-            get_sentence_2
         ])
         .manage(nexus.clone())
         .build(tauri::generate_context!())
@@ -104,11 +100,6 @@ async fn get_current_sentence(app: tauri::AppHandle) -> Result<String, String> {
     } else {
         Ok(current_sentence.clone())
     }
-}
-
-#[tauri::command]
-async fn get_sentence_2(_app: tauri::AppHandle) -> String {
-    "this is a sentence".to_string()
 }
 
 #[tauri::command]

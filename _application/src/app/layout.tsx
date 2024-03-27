@@ -42,10 +42,20 @@ export default function RootLayout({
 
   useEffect(() => {
     const getSentence = async () => {
-      if (command === "mic") {
-        console.log("getSentence - Getting sentence");
-        let sentence = await invoke("get_current_sentence");
-        console.log("getSentence - Retrived ->" + sentence + "<- ");
+      if (command === "stop") {
+        let _ = await invoke("stop_playback_from_frontend");
+      }
+      if (command === "play") {
+        let _ = await invoke("play_playback_from_frontend");
+      }
+      if (command === "pause") {
+        let _ = await invoke("pause_playback_from_frontend");
+      }
+      if (command === "resume") {
+        let _ = await invoke("resume_playback_from_frontend");
+      }
+      if (command === "stop") {
+        let _ = await invoke("stop_playback_from_frontend");
       }
     };
     getSentence();
@@ -60,7 +70,7 @@ export default function RootLayout({
           <div className="flex h-full fixed left-0 right-0 bottom-0">
             <SideBar />
             <div className="h-full flex flex-col w-full justify-between mx-auto">
-              <div ref={scrollRef} className="overflow-y-auto flex-1">
+              <div ref={scrollRef} className="overflow-y-auto  flex-1">
                 {children}
               </div>
               <ChatFooter />

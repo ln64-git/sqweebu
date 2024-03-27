@@ -29,6 +29,7 @@ pub struct PlaybackManager {
     pub sink_empty: AtomicBool,
     pub sink: Option<Sink>,
     pub sentence_send: mpsc::Sender<String>,
+    pub is_idle: AtomicBool,
 }
 
 impl PlaybackManager {
@@ -38,6 +39,7 @@ impl PlaybackManager {
             sink_empty: AtomicBool::new(true),
             sink: Some(sink),
             sentence_send,
+            is_idle: AtomicBool::new(true),
         }
     }
 
@@ -71,7 +73,6 @@ impl PlaybackManager {
                     let audio_data = BASE64_STANDARD
                         .decode(entry.audio_data.as_bytes())
                         .map_err(|e| Box::new(e) as Box<dyn Error>)?;
-
                     let source = Decoder::new(Cursor::new(audio_data))?;
                     sink.append(source);
                     self.sink_empty.store(false, Ordering::SeqCst); // Set the playing flag
@@ -81,16 +82,19 @@ impl PlaybackManager {
             }
             PlaybackCommand::Pause => {
                 if let Some(ref mut sink) = self.sink {
+                    println!("PAUSE - fucntion called.");
                     sink.pause();
                 }
             }
             PlaybackCommand::Stop => {
                 if let Some(sink) = self.sink.take() {
+                    println!("STOP - fucntion called.");
                     sink.stop();
                 }
             }
             PlaybackCommand::Resume => {
                 if let Some(ref mut sink) = self.sink {
+                    println!("RESUME - fucntion called.");
                     sink.play();
                 }
             }
@@ -123,8 +127,13 @@ pub async fn init_playback_channel(sentence_send: mpsc::Sender<String>) -> Sende
             let mut playback = PlaybackManager::new(sink, sentence_send);
 
             while let Some(command) = queue_recv.recv().await {
+                let atomic_order = std::sync::atomic::Ordering::SeqCst;
                 playback.command_queue.push_back(command);
-                playback.process_command_queue().await;
+                if playback.is_idle.load(atomic_order) {
+                    playback.is_idle.store(false, atomic_order);
+                    playback.process_command_queue().await;
+                    playback.is_idle.store(true, atomic_order);
+                }
             }
         });
     });
