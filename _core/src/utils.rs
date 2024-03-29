@@ -1,3 +1,4 @@
+use crate::playback;
 use crate::playback::PlaybackCommand;
 use crate::process_response;
 use crate::AppState;
@@ -7,33 +8,25 @@ use base64::Engine;
 use serde::Deserialize;
 use serde::Serialize;
 use std::error::Error;
+use std::sync::Arc;
 use std::time::Duration;
 use surrealdb::Surreal;
 use tokio::sync::mpsc;
+use tokio::sync::Mutex;
 use tokio::time::sleep;
 
-pub async fn speak_text(
-    text: &str,
-    speech_service: &str,
-    audio_db: Surreal<surrealdb::engine::local::Db>,
-    // playback_send: &mpsc::Sender<PlaybackCommand>,
+pub async fn listen_stop_playback(
+    // nexus: Arc<Mutex<AppState>>,
+    playback_send: &mpsc::Sender<PlaybackCommand>,
 ) -> Result<(), Box<dyn Error>> {
-    let audio_data = get_speech_from_api(text, speech_service).await?;
-
-    // Using the STANDARD engine for base64 encoding
-    let encoded_data = general_purpose::STANDARD.encode(&audio_data);
-
-    add_audio_entry_to_db(text, encoded_data, audio_db)
-        .await
-        .map_err(|e| e as Box<dyn Error>)?;
-
-    // let _ = playback_send.send(PlaybackCommand::Play(audio_data)).await;
-
-    Ok(())
+    loop {
+        playback_send
+            .send(PlaybackCommand::CheckSink)
+            .await
+            .map_err(|e| Box::new(e) as Box<dyn Error>)?;
+        tokio::time::sleep(Duration::from_millis(1000)).await;
+    }
 }
-
-use std::sync::Arc;
-use tokio::sync::Mutex;
 
 pub async fn listen_audio_database(nexus: Arc<Mutex<AppState>>) -> Result<(), Box<dyn Error>> {
     let mut last_played_index: i32 = 0; // Initialize with 0 or load this from a persisted source
@@ -73,6 +66,26 @@ pub async fn listen_audio_database(nexus: Arc<Mutex<AppState>>) -> Result<(), Bo
         drop(nexus_locked);
         // sleep(Duration::from_secs(5)).await; // Maintain this sleep to prevent constant querying
     }
+}
+
+pub async fn speak_text(
+    text: &str,
+    speech_service: &str,
+    audio_db: Surreal<surrealdb::engine::local::Db>,
+    // playback_send: &mpsc::Sender<PlaybackCommand>,
+) -> Result<(), Box<dyn Error>> {
+    let audio_data = get_speech_from_api(text, speech_service).await?;
+
+    // Using the STANDARD engine for base64 encoding
+    let encoded_data = general_purpose::STANDARD.encode(&audio_data);
+
+    add_audio_entry_to_db(text, encoded_data, audio_db)
+        .await
+        .map_err(|e| e as Box<dyn Error>)?;
+
+    // let _ = playback_send.send(PlaybackCommand::Play(audio_data)).await;
+
+    Ok(())
 }
 
 pub async fn speak_gpt(

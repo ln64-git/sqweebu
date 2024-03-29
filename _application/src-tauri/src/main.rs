@@ -3,7 +3,7 @@
 
 // region: --- imports
 use _core::playback::{init_playback_channel, PlaybackCommand};
-use _core::utils::listen_audio_database;
+use _core::utils::{listen_audio_database, listen_stop_playback};
 use _core::{process_input, AppState, ChatEntry};
 use std::sync::Arc;
 use surrealdb::engine::local::{Mem, RocksDb};
@@ -19,6 +19,8 @@ use tokio::task;
 
 #[tokio::main]
 async fn main() {
+    // region: --- System Tray
+
     let show = CustomMenuItem::new("show".to_string(), "Show");
     let hide = CustomMenuItem::new("hide".to_string(), "Hide");
     let quit = CustomMenuItem::new("quit".to_string(), "Quit");
@@ -27,6 +29,9 @@ async fn main() {
         .add_item(hide)
         .add_item(quit);
     let system_tray = SystemTray::new().with_menu(tray_menu);
+
+    // endregion: --- System Tray
+    // region: --- Database
 
     let data_dir = data_dir().unwrap(); // This assumes the operation won't fail
     let db_path = data_dir.join("sqweebu");
@@ -40,10 +45,13 @@ async fn main() {
     let audio_db = Surreal::new::<Mem>(()).await.unwrap();
     let _ = audio_db.use_ns("user7").use_db("audio").await;
 
+    // endregion: --- Database
+
     let (sentence_send, sentence_recv) = mpsc::channel::<String>(32);
 
     let playback_send = init_playback_channel(sentence_send).await;
 
+    let playback_send_clone = playback_send.clone();
     let nexus = Arc::new(Mutex::new(AppState {
         playback_send,
         current_sentence: Arc::new(Mutex::new("".to_string())),
@@ -68,6 +76,16 @@ async fn main() {
         }
     });
 
+    // Clone `playback_send` before moving it into the async block.
+    let playback_send_clone = playback_send_clone.clone();
+    tokio::spawn(async move {
+        // Use a reference to the cloned `Sender` here, as required by the function signature.
+        if let Err(e) = listen_stop_playback(&playback_send_clone).await {
+            eprintln!("Error: {:?}", e);
+        }
+    });
+
+    // region: --- Tauri Build
     tauri::Builder::default()
         .system_tray(system_tray)
         .on_system_tray_event(|app, event| handle_system_tray_event(app, event))
@@ -88,6 +106,7 @@ async fn main() {
             }
             _ => {}
         });
+    // endregion: --- Tauri Build
 }
 
 #[tauri::command]

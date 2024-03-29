@@ -22,6 +22,7 @@ pub enum PlaybackCommand {
     Stop,
     Resume,
     Clear,
+    CheckSink,
 }
 
 pub struct PlaybackManager {
@@ -66,10 +67,8 @@ impl PlaybackManager {
                     let _ = self.sentence_send.send("".to_string()).await;
                 }
                 PlaybackCommand::Pause(entry) => {
-                    println!("PlaybackCommand::Pause - Start");
                     let _ = self.sentence_storage_send.send(entry.clone()).await;
                     let _ = self.sentence_send.send("".to_string()).await;
-                    println!("PlaybackCommand::Pause - Complete");
                 }
                 PlaybackCommand::Resume => {
                     println!("PlaybackCommand::Resume - Start");
@@ -87,6 +86,12 @@ impl PlaybackManager {
                     };
                     println!("PlaybackCommand::Resume - Complete");
                     println!("{:#?}", sentence_storage);
+                }
+                PlaybackCommand::CheckSink => {
+                    // If the sink is empty, send an empty string to indicate the current sentence should be cleared
+                    if self.sink_empty.load(Ordering::SeqCst) {
+                        let _ = self.sentence_send.send("".to_string()).await;
+                    }
                 }
                 _ => {
                     self.handle_command(command)
@@ -135,6 +140,7 @@ impl PlaybackManager {
                     sink.clear();
                 }
             }
+            PlaybackCommand::CheckSink => {}
         }
         Ok(())
     }
