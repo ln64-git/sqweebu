@@ -185,12 +185,16 @@ async fn pause_playback_from_frontend(app: tauri::AppHandle) -> Result<(), Strin
 
 #[tauri::command]
 async fn resume_playback_from_frontend(app: tauri::AppHandle) -> Result<(), String> {
+    println!("RESUME_PLAYBACK_FROM_FRONTEND - Function Called");
     let playback_send = {
         let nexus_lock = app.state::<Arc<Mutex<AppState>>>();
         let nexus = nexus_lock.lock().await;
         nexus.playback_send.clone()
     };
-    task::spawn(async move { playback_send.send(PlaybackCommand::Resume).await });
+    task::spawn(async move {
+        println!("RESUME_PLAYBACK_FROM_FRONTEND - Task Spawn");
+        playback_send.send(PlaybackCommand::Resume).await
+    });
     Ok(())
 }
 

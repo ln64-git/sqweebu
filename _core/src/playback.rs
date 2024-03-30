@@ -65,10 +65,16 @@ impl PlaybackManager {
                 }
                 PlaybackCommand::Stop => {
                     let _ = self.sentence_send.send("".to_string()).await;
+                    self.handle_command(PlaybackCommand::Stop)
+                        .await
+                        .expect("Failed to handle command");
                 }
                 PlaybackCommand::Pause(entry) => {
                     let _ = self.sentence_storage_send.send(entry.clone()).await;
                     let _ = self.sentence_send.send("".to_string()).await;
+                    self.handle_command(PlaybackCommand::Pause(entry.clone()))
+                        .await
+                        .expect("Failed to handle command");
                 }
                 PlaybackCommand::Resume => {
                     println!("PlaybackCommand::Resume - Start");
@@ -86,6 +92,9 @@ impl PlaybackManager {
                     };
                     println!("PlaybackCommand::Resume - Complete");
                     println!("{:#?}", sentence_storage);
+                    self.handle_command(PlaybackCommand::Resume)
+                        .await
+                        .expect("Failed to handle command");
                 }
                 PlaybackCommand::CheckSink => {
                     // If the sink is empty, send an empty string to indicate the current sentence should be cleared
@@ -118,9 +127,11 @@ impl PlaybackManager {
                 }
             }
             PlaybackCommand::Pause(_entry) => {
+                println!("PlaybackCommand::Pause - {:#?}", _entry);
                 if let Some(ref mut sink) = self.sink {
-                    println!("PAUSE - fucntion called.");
+                    println!("PlaybackCommand::Pause - Sink found.");
                     sink.pause();
+                    println!("PlaybackCommand::Pause - Sink paused");
                 }
             }
             PlaybackCommand::Stop => {

@@ -24,7 +24,7 @@ pub async fn listen_stop_playback(
             .send(PlaybackCommand::CheckSink)
             .await
             .map_err(|e| Box::new(e) as Box<dyn Error>)?;
-        tokio::time::sleep(Duration::from_millis(1000)).await;
+        tokio::time::sleep(Duration::from_millis(2000)).await;
     }
 }
 
