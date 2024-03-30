@@ -1,6 +1,5 @@
-use crate::playback;
+use crate::io::process_response;
 use crate::playback::PlaybackCommand;
-use crate::process_response;
 use crate::AppState;
 use _interface::{get_sentence_from_gpt, get_speech_from_api};
 use base64::engine::general_purpose;
@@ -64,7 +63,7 @@ pub async fn listen_audio_database(nexus: Arc<Mutex<AppState>>) -> Result<(), Bo
         }
 
         drop(nexus_locked);
-        // sleep(Duration::from_secs(5)).await; // Maintain this sleep to prevent constant querying
+        sleep(Duration::from_secs(1)).await; // Maintain this sleep to prevent constant querying
     }
 }
 

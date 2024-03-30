@@ -1,10 +1,11 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+use _core::io::{process_input, ChatEntry};
 // region: --- imports
 use _core::playback::{init_playback_channel, PlaybackCommand};
 use _core::utils::{listen_audio_database, listen_stop_playback};
-use _core::{process_input, AppState, ChatEntry};
+use _core::AppState;
 use std::sync::Arc;
 use surrealdb::engine::local::{Mem, RocksDb};
 use surrealdb::Surreal;
@@ -61,8 +62,12 @@ async fn main() {
 
     let sentence_recv_arc = Arc::new(Mutex::new(sentence_recv));
     let nexus_clone = nexus.clone();
+    let count = 0;
     tokio::spawn(async move {
         while let Some(sentence) = sentence_recv_arc.lock().await.recv().await {
+            println!("Sentence Recived {:#?}", count);
+            println!("{:#?}", sentence);
+            let _ = count + 1;
             let app_state = nexus_clone.lock().await;
             let mut current_sentence = app_state.current_sentence.lock().await;
             *current_sentence = sentence.clone();
@@ -127,24 +132,6 @@ async fn get_chat_updates(app: tauri::AppHandle) -> Result<String, String> {
     };
     serde_json::to_string(&chat_entries).map_err(|e| format!("Serialization error: {}", e))
 }
-
-// async fn broadcast_chat_entries(
-//     db_lock: Arc<Mutex<Surreal<surrealdb::engine::local::Db>>>,
-//     sender: broadcast::Sender<String>,
-// ) -> Result<(), String> {
-//     let db = db_lock.lock().await;
-//     // Simulated data for demonstration
-//     let chat_entries: Option<Vec<ChatEntry>> = match db.select("chat").await {
-//         Ok(entries) => Some(entries),
-//         Err(error) => return Err(format!("Database error: {:?}", error)),
-//     };
-//     // Serialize the data
-//     let serialized_data = serde_json::to_string(&chat_entries).map_err(|e| e.to_string())?;
-//     println!("{:#?}", serialized_data);
-//     // Broadcast the serialized data to connected WebSocket clients
-//     sender.send(serialized_data).unwrap();
-//     Ok(())
-// }
 
 async fn get_nexus(app: tauri::AppHandle) -> AppState {
     let nexus_lock = app.state::<Arc<Mutex<AppState>>>();
