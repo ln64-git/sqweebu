@@ -64,7 +64,7 @@ export default function RootLayout({
 
   // get_sentence
   return (
-    <>
+    <html lang="em">
       <body className={inter.className}>
         <LayoutProvider>
           <Header />
@@ -81,6 +81,6 @@ export default function RootLayout({
           </div>
         </LayoutProvider>
       </body>
-    </>
+    </html>
   );
 }

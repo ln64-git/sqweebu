@@ -62,12 +62,8 @@ async fn main() {
 
     let sentence_recv_arc = Arc::new(Mutex::new(sentence_recv));
     let nexus_clone = nexus.clone();
-    let count = 0;
     tokio::spawn(async move {
         while let Some(sentence) = sentence_recv_arc.lock().await.recv().await {
-            println!("Sentence Recived {:#?}", count);
-            println!("{:#?}", sentence);
-            let _ = count + 1;
             let app_state = nexus_clone.lock().await;
             let mut current_sentence = app_state.current_sentence.lock().await;
             *current_sentence = sentence.clone();
@@ -156,12 +152,10 @@ async fn process_input_from_frontend(text: String, app: tauri::AppHandle) -> Res
 
 #[tauri::command]
 async fn pause_playback_from_frontend(app: tauri::AppHandle) -> Result<(), String> {
-    println!("PAUSE_PLAYBACK_FROM_FRONTEND - Function Called");
     let nexus = get_nexus(app).await;
     let playback_send = nexus.playback_send.clone();
     let current_sentence = nexus.current_sentence.lock().await.clone();
     task::spawn(async move {
-        println!("PAUSE_PLAYBACK_FROM_FRONTEND - Task Spawn");
         let _ = playback_send
             .send(PlaybackCommand::Pause(current_sentence))
             .await;
@@ -172,16 +166,12 @@ async fn pause_playback_from_frontend(app: tauri::AppHandle) -> Result<(), Strin
 
 #[tauri::command]
 async fn resume_playback_from_frontend(app: tauri::AppHandle) -> Result<(), String> {
-    println!("RESUME_PLAYBACK_FROM_FRONTEND - Function Called");
     let playback_send = {
         let nexus_lock = app.state::<Arc<Mutex<AppState>>>();
         let nexus = nexus_lock.lock().await;
         nexus.playback_send.clone()
     };
-    task::spawn(async move {
-        println!("RESUME_PLAYBACK_FROM_FRONTEND - Task Spawn");
-        playback_send.send(PlaybackCommand::Resume).await
-    });
+    task::spawn(async move { playback_send.send(PlaybackCommand::Resume).await });
     Ok(())
 }
 
