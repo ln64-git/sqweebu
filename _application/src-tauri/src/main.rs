@@ -97,6 +97,7 @@ async fn main() {
             process_input_from_frontend,
             get_chat_updates,
             get_current_sentence,
+            read_from_sentence_frontend,
         ])
         .manage(nexus.clone())
         .build(tauri::generate_context!())
@@ -111,13 +112,6 @@ async fn main() {
 }
 
 #[tauri::command]
-async fn get_current_sentence(app: tauri::AppHandle) -> Result<String, String> {
-    let app_state = get_nexus(app).await;
-    let current_sentence = app_state.current_sentence.lock().await;
-    Ok(current_sentence.clone())
-}
-
-#[tauri::command]
 async fn get_chat_updates(app: tauri::AppHandle) -> Result<String, String> {
     let nexus = get_nexus(app).await;
     let chat_db = &nexus.chat_db;
@@ -129,13 +123,12 @@ async fn get_chat_updates(app: tauri::AppHandle) -> Result<String, String> {
     serde_json::to_string(&chat_entries).map_err(|e| format!("Serialization error: {}", e))
 }
 
-async fn get_nexus(app: tauri::AppHandle) -> AppState {
-    let nexus_lock = app.state::<Arc<Mutex<AppState>>>();
-    let nexus = nexus_lock.lock().await;
-    nexus.clone()
+#[tauri::command]
+async fn read_from_sentence_frontend(app: tauri::AppHandle) -> Result<String, String> {
+    let app_state = get_nexus(app).await;
+    let current_sentence = app_state.current_sentence.lock().await;
+    Ok(current_sentence.clone())
 }
-
-// region: --- Main Commands
 
 #[tauri::command]
 async fn process_input_from_frontend(text: String, app: tauri::AppHandle) -> Result<(), String> {
@@ -146,9 +139,12 @@ async fn process_input_from_frontend(text: String, app: tauri::AppHandle) -> Res
     Ok(())
 }
 
-// endregion: --- Main Commands
-
-// region: --- Playback Commands
+#[tauri::command]
+async fn get_current_sentence(app: tauri::AppHandle) -> Result<String, String> {
+    let app_state = get_nexus(app).await;
+    let current_sentence = app_state.current_sentence.lock().await;
+    Ok(current_sentence.clone())
+}
 
 #[tauri::command]
 async fn pause_playback_from_frontend(app: tauri::AppHandle) -> Result<(), String> {
@@ -160,7 +156,6 @@ async fn pause_playback_from_frontend(app: tauri::AppHandle) -> Result<(), Strin
             .send(PlaybackCommand::Pause(current_sentence))
             .await;
     });
-
     Ok(())
 }
 
@@ -186,7 +181,11 @@ async fn stop_playback_from_frontend(app: tauri::AppHandle) -> Result<(), String
     Ok(())
 }
 
-// endregion: --- Playback Commands
+async fn get_nexus(app: tauri::AppHandle) -> AppState {
+    let nexus_lock = app.state::<Arc<Mutex<AppState>>>();
+    let nexus = nexus_lock.lock().await;
+    nexus.clone()
+}
 
 fn handle_system_tray_event(app: &tauri::AppHandle, event: SystemTrayEvent) {
     match event {

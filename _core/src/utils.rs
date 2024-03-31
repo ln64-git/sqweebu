@@ -15,7 +15,6 @@ use tokio::sync::Mutex;
 use tokio::time::sleep;
 
 pub async fn listen_stop_playback(
-    // nexus: Arc<Mutex<AppState>>,
     playback_send: &mpsc::Sender<PlaybackCommand>,
 ) -> Result<(), Box<dyn Error>> {
     loop {
@@ -23,7 +22,7 @@ pub async fn listen_stop_playback(
             .send(PlaybackCommand::CheckSink)
             .await
             .map_err(|e| Box::new(e) as Box<dyn Error>)?;
-        tokio::time::sleep(Duration::from_millis(8000)).await;
+        tokio::time::sleep(Duration::from_secs(3)).await;
     }
 }
 
@@ -67,23 +66,39 @@ pub async fn listen_audio_database(nexus: Arc<Mutex<AppState>>) -> Result<(), Bo
     }
 }
 
+pub async fn read_from_sentence(start_index: i32, nexus: Arc<Mutex<AppState>>) {
+    let nexus_locked = nexus.lock().await;
+    let audio_db = &nexus_locked.audio_db;
+
+    // Assuming audio entries are already sorted and unique by index.
+    if let Ok(audio_entries) = audio_db.select::<Vec<AudioEntry>>("audio").await {
+        for entry in audio_entries.iter().filter(|e| e.index >= start_index) {
+            if entry.entry_finished {
+                break;
+            }
+            let _ = nexus_locked
+                .playback_send
+                .send(PlaybackCommand::Play(entry.clone()))
+                .await
+                .expect("Failed to send play command");
+        }
+    } else {
+        eprintln!("Error querying audio entries from index: {}", start_index);
+    }
+}
+
 pub async fn speak_text(
     text: &str,
     speech_service: &str,
     audio_db: Surreal<surrealdb::engine::local::Db>,
-    // playback_send: &mpsc::Sender<PlaybackCommand>,
+    entry_finished: bool,
 ) -> Result<(), Box<dyn Error>> {
     let audio_data = get_speech_from_api(text, speech_service).await?;
-
     // Using the STANDARD engine for base64 encoding
     let encoded_data = general_purpose::STANDARD.encode(&audio_data);
-
-    add_audio_entry_to_db(text, encoded_data, audio_db)
+    add_audio_entry_to_db(text, encoded_data, audio_db, entry_finished)
         .await
         .map_err(|e| e as Box<dyn Error>)?;
-
-    // let _ = playback_send.send(PlaybackCommand::Play(audio_data)).await;
-
     Ok(())
 }
 
@@ -93,7 +108,6 @@ pub async fn speak_gpt(
     audio_db: Surreal<surrealdb::engine::local::Db>,
     gpt_service: &str,
     speech_service: &str,
-    // playback_send: &mpsc::Sender<PlaybackCommand>,
 ) -> Result<(), Box<dyn Error>> {
     let (sentence_send, mut sentence_recv) = mpsc::channel::<String>(32);
     let gpt_service_cloned = gpt_service.to_string();
@@ -106,8 +120,19 @@ pub async fn speak_gpt(
 
     while let Some(sentence) = sentence_recv.recv().await {
         let _ = process_response(sentence.clone(), chat_db.clone()).await;
-        speak_text(&sentence, speech_service, audio_db.clone()).await?;
+        speak_text(&sentence, speech_service, audio_db.clone(), false)
+            .await
+            .map_err(|e| {
+                eprintln!("Error in speak_gpt: {}", e);
+                e
+            })?;
     }
+    speak_text("", speech_service, audio_db.clone(), true)
+        .await
+        .map_err(|e| {
+            eprintln!("Error in speak_gpt: {}", e);
+            e
+        })?;
     Ok(())
 }
 
@@ -116,26 +141,29 @@ pub struct AudioEntry {
     pub index: i32,
     pub text_content: String,
     pub audio_data: String,
+    pub entry_finished: bool,
 }
 
 async fn add_audio_entry_to_db(
     text: &str,
     encoded_data: String,
     audio_db: Surreal<surrealdb::engine::local::Db>,
+    entry_finished: bool,
 ) -> Result<(), Box<dyn Error>> {
     let highest_index: i32 = get_highest_index(&audio_db).await?;
     let new_index = highest_index + 1;
-    let audio = AudioEntry {
+    println!("add_audio_entry_to_db - New Index - {:#?}", new_index);
+    let entry = AudioEntry {
         index: new_index,
         text_content: text.to_string(),
         audio_data: encoded_data,
+        entry_finished,
     };
     let _: Result<Vec<AudioEntry>, Box<dyn Error>> = audio_db
         .create("audio")
-        .content(&audio)
+        .content(&entry)
         .await
         .map_err(|e| e.into());
-
     Ok(())
 }
 

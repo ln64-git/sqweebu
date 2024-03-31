@@ -3,8 +3,6 @@
 // region: --- Modules
 
 use reqwest;
-use sentence::SentenceTokenizer;
-use sentence::Token;
 use serde::{Deserialize, Serialize};
 use serde_json;
 use std::error::Error;
@@ -39,8 +37,7 @@ pub async fn ollama_generate_api(
 ) -> Result<(), Box<dyn Error>> {
     let client = reqwest::Client::new();
     let request_body = GenerateRequest {
-        // model: "dolphin-mixtral".to_string(),
-        model: "llama2-uncensored".to_string(),
+        model: "llama2-uncensored".to_string(), // Adjusted for clarity.
         prompt,
         stream: true,
     };
@@ -51,9 +48,7 @@ pub async fn ollama_generate_api(
         .await?
         .bytes_stream();
 
-    // let mut stream_ended = false;
     let mut sentence = String::new();
-
     while let Some(chunk) = response_stream.next().await {
         let chunk = chunk?;
         let chunk_text = String::from_utf8_lossy(&chunk);
@@ -62,42 +57,49 @@ pub async fn ollama_generate_api(
             match serde_json::from_str::<OllamaFragment>(line) {
                 Ok(fragment) => {
                     sentence.push_str(&fragment.response);
-                    if detect_punctuation(fragment).await {
-                        let final_sentence = parse_sentence(&sentence).await;
-                        let _ = sentence_send.send(final_sentence).await; // await here
+                    if detect_sentence_end(&fragment).await {
+                        if !sentence.trim().is_empty() {
+                            let _ = sentence_send.send(sentence.clone()).await;
+                        } else {
+                            eprintln!("Skipping empty or whitespace-only sentence.");
+                        }
                         sentence.clear();
                     }
                 }
-                Err(e) => {
-                    eprintln!("JSON parsing error: {}", e);
-                }
+                Err(e) => eprintln!("JSON parsing error: {}", e),
             }
         }
     }
-    // stream_ended = true;
     Ok(())
 }
 
-async fn parse_sentence(sentence: &String) -> String {
-    let cleaned_sentence = if sentence.starts_with('\n') {
-        sentence.chars().skip(1).collect()
-    } else {
-        sentence.clone()
-    };
-    cleaned_sentence
-}
+async fn detect_sentence_end(fragment: &OllamaFragment) -> bool {
+    // Check if the fragment is marked as done by the API.
+    if fragment.done {
+        return true;
+    }
 
-async fn detect_punctuation(fragment: OllamaFragment) -> bool {
-    let text_fragment = fragment.response;
-    let tokenizer = SentenceTokenizer::new();
-    let tokens = tokenizer.tokenize(text_fragment.as_str());
-    for token in tokens {
-        match token {
-            Token::Punctuation(_punctuation) => return true,
-            _ => {}
+    // Detect sentence-ending punctuation.
+    let text_fragment = &fragment.response;
+    let ending_chars = text_fragment
+        .trim_end_matches(char::is_alphanumeric)
+        .chars()
+        .rev();
+
+    let mut found_ending_punctuation = false;
+    for c in ending_chars {
+        match c {
+            '.' | '!' | '?' | ',' => {
+                found_ending_punctuation = true;
+            }
+            // Assuming space, quotation marks, or other punctuation might follow the sentence-ending punctuation.
+            ' ' | '"' | '\'' | ')' | ']' | '}' => continue,
+            // If we encounter any other character before finding a sentence-ending punctuation, stop the check.
+            _ => break,
         }
     }
-    return false;
+
+    found_ending_punctuation
 }
 
 // endregion: --- Ollama API

@@ -111,9 +111,11 @@ impl PlaybackManager {
             }
         }
     }
-
     async fn handle_play(&mut self, entry: AudioEntry) -> Result<(), Box<dyn Error>> {
         use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
+        if entry.text_content.trim().is_empty() {
+            return Ok(());
+        }
         if let Some(ref mut sink) = self.sink {
             let audio_data = BASE64_STANDARD
                 .decode(entry.audio_data.as_bytes())
@@ -121,20 +123,18 @@ impl PlaybackManager {
                     eprintln!("Error decoding base64 audio data: {}", e);
                     Box::new(e) as Box<dyn Error>
                 })?;
-
-            // Debug: Write audio_data to a file to inspect and verify it
-            // This step is for debugging purposes and can be removed later
-            std::fs::write("debug_audio_data.raw", &audio_data)
-                .expect("Failed to write debug audio file");
-
-            let source = Decoder::new(Cursor::new(audio_data)).map_err(|e| {
-                eprintln!("Error creating audio source decoder: {}", e);
-                Box::new(e) as Box<dyn Error>
-            })?;
-
-            sink.append(source);
-            self.sink_empty.store(false, Ordering::SeqCst);
-            self.sink_empty.store(true, Ordering::SeqCst);
+            println!("handle_play - {:#?}", entry.text_content);
+            match Decoder::new(Cursor::new(audio_data)) {
+                Ok(source) => {
+                    println!("handle_play - Sentence Decoded Successfully");
+                    sink.append(source);
+                    self.sink_empty.store(false, Ordering::SeqCst);
+                    self.sink_empty.store(true, Ordering::SeqCst);
+                }
+                Err(e) => {
+                    eprintln!("Error creating audio source decoder: {}", e);
+                }
+            }
         }
         Ok(())
     }

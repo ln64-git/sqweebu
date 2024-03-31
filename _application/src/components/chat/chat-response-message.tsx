@@ -8,7 +8,9 @@ const ResponseMessage = (message: ChatEntry) => {
   const textPrimary = theme.textPrimary;
   const textSecondary = theme.textSecondary;
 
-  const handleClick = (message: ChatEntry) => {
+  const handleClick = (message: ChatEntry, index: number) => {
+    console.log(index);
+    console.log(message);
     const getData = async () => {
       let data = await invoke("get_current_sentence");
       console.log(data);
@@ -22,7 +24,7 @@ const ResponseMessage = (message: ChatEntry) => {
       {message.content.map((text, index) => (
         <React.Fragment key={index}>
           <span
-            onClick={() => handleClick(message)}
+            onClick={() => handleClick(message, index)}
             className="cursor-pointer"
             style={{
               color: textPrimary,
