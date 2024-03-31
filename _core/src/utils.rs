@@ -152,7 +152,6 @@ async fn add_audio_entry_to_db(
 ) -> Result<(), Box<dyn Error>> {
     let highest_index: i32 = get_highest_index(&audio_db).await?;
     let new_index = highest_index + 1;
-    println!("add_audio_entry_to_db - New Index - {:#?}", new_index);
     let entry = AudioEntry {
         index: new_index,
         text_content: text.to_string(),

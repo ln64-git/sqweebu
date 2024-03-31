@@ -123,10 +123,8 @@ impl PlaybackManager {
                     eprintln!("Error decoding base64 audio data: {}", e);
                     Box::new(e) as Box<dyn Error>
                 })?;
-            println!("handle_play - {:#?}", entry.text_content);
             match Decoder::new(Cursor::new(audio_data)) {
                 Ok(source) => {
-                    println!("handle_play - Sentence Decoded Successfully");
                     sink.append(source);
                     self.sink_empty.store(false, Ordering::SeqCst);
                     self.sink_empty.store(true, Ordering::SeqCst);
