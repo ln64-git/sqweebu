@@ -96,6 +96,21 @@ const MessageLog = () => {
     []
   );
 
+  const [currentSentence, setCurrentSentence] = useState("");
+
+  useEffect(() => {
+    const getCurrentSentence = async () => {
+      try {
+        const result = await invoke("get_current_sentence");
+        console.log(result);
+        setCurrentSentence(result as string);
+      } catch (error) {
+        console.error("Error fetching current sentence:", error);
+      }
+    };
+    getCurrentSentence();
+  });
+
   return (
     <div className="flex h-full  mt-10 max-w-[580px] mx-auto">
       <div className="flex-1 px-4 text-zinc-400 mt-1.5 gap-2">
@@ -118,6 +133,8 @@ const MessageLog = () => {
             </div>
           ))}
         </ul>
+        Current Sentence:
+        {currentSentence}
       </div>
     </div>
   );
