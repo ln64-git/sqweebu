@@ -4,7 +4,7 @@
 use _core::io::{process_input, ChatEntry};
 // region: --- imports
 use _core::playback::{init_playback_channel, PlaybackCommand};
-use _core::utils::{check_empty_sink, listen_audio_database};
+use _core::utils::{check_empty_sink, listen_audio_database, AudioEntry};
 use _core::AppState;
 use std::sync::Arc;
 use surrealdb::engine::local::{Mem, RocksDb};
@@ -48,25 +48,25 @@ async fn main() {
 
     // endregion: --- Database
 
-    let (sentence_send, sentence_recv) = mpsc::channel::<String>(32);
+    let (entry_send, entry_recv) = mpsc::channel::<Option<AudioEntry>>(32);
 
-    let playback_send = init_playback_channel(sentence_send).await;
+    let playback_send = init_playback_channel(entry_send).await;
 
     let playback_send_clone = playback_send.clone();
     let nexus = Arc::new(Mutex::new(AppState {
         playback_send,
-        current_sentence: Arc::new(Mutex::new("".to_string())),
+        current_entry: Arc::new(Mutex::new(None)),
         chat_db,
         audio_db,
     }));
 
-    let sentence_recv_arc = Arc::new(Mutex::new(sentence_recv));
+    let entry_recv_arc = Arc::new(Mutex::new(entry_recv));
     let nexus_clone = nexus.clone();
     tokio::spawn(async move {
-        while let Some(sentence) = sentence_recv_arc.lock().await.recv().await {
-            let app_state = nexus_clone.lock().await;
-            let mut current_sentence = app_state.current_sentence.lock().await;
-            *current_sentence = sentence.clone();
+        while let Some(entry) = entry_recv_arc.lock().await.recv().await {
+            let nexus = nexus_clone.lock().await;
+            let mut current_entry = nexus.current_entry.lock().await;
+            *current_entry = entry.clone();
         }
     });
 
@@ -96,7 +96,7 @@ async fn main() {
             stop_playback_from_frontend,
             process_input_from_frontend,
             get_chat_updates,
-            get_current_sentence,
+            get_current_entry,
             read_from_sentence_frontend,
         ])
         .manage(nexus.clone())
@@ -124,10 +124,12 @@ async fn get_chat_updates(app: tauri::AppHandle) -> Result<String, String> {
 }
 
 #[tauri::command]
-async fn read_from_sentence_frontend(app: tauri::AppHandle) -> Result<String, String> {
-    let app_state = get_nexus(app).await;
-    let current_sentence = app_state.current_sentence.lock().await;
-    Ok(current_sentence.clone())
+async fn read_from_sentence_frontend(
+    app: tauri::AppHandle,
+) -> Result<Option<AudioEntry>, Option<AudioEntry>> {
+    let nexus = get_nexus(app).await;
+    let current_entry = nexus.current_entry.lock().await;
+    Ok(current_entry.clone())
 }
 
 #[tauri::command]
@@ -140,21 +142,20 @@ async fn process_input_from_frontend(text: String, app: tauri::AppHandle) -> Res
 }
 
 #[tauri::command]
-async fn get_current_sentence(app: tauri::AppHandle) -> Result<String, String> {
+async fn get_current_entry(
+    app: tauri::AppHandle,
+) -> Result<Option<AudioEntry>, Option<AudioEntry>> {
     let app_state = get_nexus(app).await;
-    let current_sentence = app_state.current_sentence.lock().await;
-    Ok(current_sentence.clone())
+    let current_entry = app_state.current_entry.lock().await;
+    Ok(current_entry.clone())
 }
 
 #[tauri::command]
-async fn pause_playback_from_frontend(app: tauri::AppHandle) -> Result<(), String> {
+async fn pause_playback_from_frontend(app: tauri::AppHandle) -> Result<(), Option<AudioEntry>> {
     let nexus = get_nexus(app).await;
     let playback_send = nexus.playback_send.clone();
-    let current_sentence = nexus.current_sentence.lock().await.clone();
     task::spawn(async move {
-        let _ = playback_send
-            .send(PlaybackCommand::Pause(current_sentence))
-            .await;
+        let _ = playback_send.send(PlaybackCommand::Pause).await;
     });
     Ok(())
 }

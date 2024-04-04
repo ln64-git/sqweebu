@@ -14,12 +14,12 @@ use std::io::Cursor;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
 use tokio::sync::mpsc::{self, Sender};
-use tokio::time::{self, Duration};
+use tokio::time::Duration;
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub enum PlaybackCommand {
     Play(AudioEntry),
-    Pause(String),
+    Pause,
     Stop,
     Resume,
     Clear,
@@ -31,72 +31,56 @@ pub struct PlaybackManager {
     pub sink_empty: Arc<AtomicBool>,
     pub is_paused: AtomicBool,
     pub command_queue: VecDeque<PlaybackCommand>,
-    pub current_sentence: String,
-    pub sentence_send: mpsc::Sender<String>,
-    pub sentence_storage_send: mpsc::Sender<String>,
-    pub sentence_storage_recv: mpsc::Receiver<String>,
+    pub current_entry: Option<AudioEntry>,
+    pub entry_send: mpsc::Sender<Option<AudioEntry>>,
 }
 
 impl PlaybackManager {
-    pub fn new(sink: Sink, sentence_send: mpsc::Sender<String>) -> Self {
-        let (sentence_storage_send, sentence_storage_recv) = mpsc::channel::<String>(32);
+    pub fn new(sink: Sink, entry_send: mpsc::Sender<Option<AudioEntry>>) -> Self {
         PlaybackManager {
             sink: Some(sink),
             sink_empty: Arc::new(AtomicBool::new(true)),
             is_paused: AtomicBool::new(false),
             command_queue: VecDeque::new(),
-            current_sentence: "".to_string(),
-            sentence_send,
-            sentence_storage_send,
-            sentence_storage_recv,
+            current_entry: None,
+            entry_send,
         }
     }
 
     pub async fn process_command_queue(&mut self) {
         while let Some(command) = self.command_queue.pop_front() {
-            match &command {
-                PlaybackCommand::Play(entry) => {
+            match command {
+                PlaybackCommand::Play(ref entry) => {
                     if self.is_paused.load(Ordering::SeqCst) {
                         self.command_queue.push_back(command); // Re-queue the command itself
                         return;
                     }
-                    self.current_sentence = entry.text_content.clone();
-                    let _ = self.sentence_send.send(entry.clone().text_content).await;
+                    self.current_entry = Some(entry.clone());
+                    let _ = self.entry_send.send(Some(entry.clone())).await;
                     self.handle_play(entry.clone())
                         .await
                         .expect("Failed to handle play command");
                 }
-                PlaybackCommand::Pause(sentence) => {
+                PlaybackCommand::Pause => {
                     self.is_paused.store(true, Ordering::SeqCst);
-                    let _ = self.sentence_storage_send.send(sentence.clone()).await;
-                    let _ = self.sentence_send.send("".to_string()).await;
-                    self.current_sentence = "".to_string();
+                    let _ = self.entry_send.send(None).await;
+                    self.current_entry = None;
                     if let Some(ref sink) = self.sink {
                         sink.pause();
                     }
                 }
                 PlaybackCommand::Resume => {
-                    self.is_paused.store(false, Ordering::SeqCst);
-                    match time::timeout(Duration::from_secs(5), self.sentence_storage_recv.recv())
-                        .await
-                    {
-                        Ok(Some(sentence)) => {
-                            if let Some(sink) = &mut self.sink {
-                                let _ = self.sentence_send.send(sentence).await;
-                                sink.play();
-                            }
+                    if self.is_paused.load(Ordering::SeqCst) {
+                        self.is_paused.store(false, Ordering::SeqCst);
+                        if let Some(ref sink) = self.sink {
+                            sink.play();
                         }
-                        Ok(None) => println!(
-                            "No more sentences to resume playback with, channel was closed."
-                        ),
-                        Err(_) => println!("Timeout occurred waiting for sentence_storage_recv"),
                     }
                 }
-
                 PlaybackCommand::Stop => {
                     if let Some(ref mut sink) = self.sink.take() {
                         sink.stop();
-                        self.current_sentence = "".to_string();
+                        self.current_entry = None;
                     }
                 }
                 PlaybackCommand::Clear => {
@@ -106,12 +90,13 @@ impl PlaybackManager {
                 }
                 PlaybackCommand::CheckSink => {
                     if self.sink_empty.load(Ordering::SeqCst) {
-                        let _ = self.sentence_send.send("".to_string()).await;
+                        let _ = self.entry_send.send(None).await;
                     }
                 }
             }
         }
     }
+
     async fn handle_play(&mut self, entry: AudioEntry) -> Result<(), Box<dyn Error>> {
         use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
 
@@ -161,7 +146,9 @@ impl PlaybackManager {
     }
 }
 
-pub async fn init_playback_channel(sentence_send: mpsc::Sender<String>) -> Sender<PlaybackCommand> {
+pub async fn init_playback_channel(
+    entry_send: mpsc::Sender<Option<AudioEntry>>,
+) -> Sender<PlaybackCommand> {
     let (playback_send, mut playback_recv) = mpsc::channel::<PlaybackCommand>(32);
     let (queue_send, mut queue_recv) = mpsc::channel::<PlaybackCommand>(32);
 
@@ -175,7 +162,7 @@ pub async fn init_playback_channel(sentence_send: mpsc::Sender<String>) -> Sende
         let rt = tokio::runtime::Runtime::new().unwrap();
         let (_stream, stream_handle) = OutputStream::try_default().unwrap();
         let sink = Sink::try_new(&stream_handle).unwrap();
-        let mut playback = PlaybackManager::new(sink, sentence_send);
+        let mut playback = PlaybackManager::new(sink, entry_send);
 
         rt.block_on(async {
             while let Some(command) = queue_recv.recv().await {

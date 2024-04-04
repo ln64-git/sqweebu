@@ -9,6 +9,7 @@ use serde::Serialize;
 use std::error::Error;
 use std::sync::Arc;
 use std::time::Duration;
+use std::time::Instant;
 use surrealdb::Surreal;
 use tokio::sync::mpsc;
 use tokio::sync::Mutex;
@@ -137,6 +138,8 @@ pub struct AudioEntry {
     pub text_content: String,
     pub audio_data: String,
     pub audio_length: f32,
+    pub playback_active: bool,
+    pub playback_elapsed: f32,
     pub text_finished: bool,
 }
 
@@ -174,11 +177,14 @@ async fn add_audio_entry_to_db(
 ) -> Result<(), Box<dyn Error>> {
     let highest_index: i32 = get_highest_index(&audio_db).await?;
     let new_index = highest_index + 1;
+
     let entry = AudioEntry {
         index: new_index,
         text_content: text.to_string(),
         audio_data: encoded_data,
         audio_length,
+        playback_active: false,
+        playback_elapsed: 0.0,
         text_finished,
     };
     let _: Result<Vec<AudioEntry>, Box<dyn Error>> = audio_db

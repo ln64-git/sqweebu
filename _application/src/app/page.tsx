@@ -96,14 +96,24 @@ const MessageLog = () => {
     []
   );
 
-  const [currentSentence, setCurrentSentence] = useState("");
+  interface AudioEntry {
+    index: number;
+    text_content: string;
+    audio_data: string;
+    audio_length: number;
+    text_finished: boolean;
+  }
+
+  // Adjust your state to expect an AudioEntry object or null.
+  const [currentEntry, setCurrentEntry] = useState<AudioEntry | null>(null);
 
   useEffect(() => {
     const getCurrentSentence = async () => {
       try {
-        const result = await invoke("get_current_sentence");
+        const result = await invoke("get_current_entry");
         console.log(result);
-        setCurrentSentence(result as string);
+        // Use type assertion to tell TypeScript the expected type of result
+        setCurrentEntry(result as AudioEntry);
       } catch (error) {
         console.error("Error fetching current sentence:", error);
       }
@@ -133,8 +143,13 @@ const MessageLog = () => {
             </div>
           ))}
         </ul>
-        Current Sentence:
-        {currentSentence}
+        <div>
+          <div>Current Entry:</div>
+          <div>
+            {currentEntry ? currentEntry.text_content : "No current entry"}
+            {currentEntry ? currentEntry.audio_length : "No current entry"}
+          </div>
+        </div>
       </div>
     </div>
   );
