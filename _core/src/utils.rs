@@ -12,57 +12,49 @@ use std::time::Duration;
 use surrealdb::Surreal;
 use tokio::sync::mpsc;
 use tokio::sync::Mutex;
-use tokio::time::sleep;
 
-pub async fn listen_stop_playback(
+pub async fn check_empty_sink(
     playback_send: &mpsc::Sender<PlaybackCommand>,
-) -> Result<(), Box<dyn Error>> {
-    loop {
-        playback_send
-            .send(PlaybackCommand::CheckSink)
-            .await
-            .map_err(|e| Box::new(e) as Box<dyn Error>)?;
-        tokio::time::sleep(Duration::from_secs(3)).await;
-    }
+) -> Result<bool, Box<dyn Error>> {
+    playback_send
+        .send(PlaybackCommand::CheckSink)
+        .await
+        .map_err(|e| Box::new(e) as Box<dyn Error>)?;
+    Ok(true)
 }
-
 pub async fn listen_audio_database(nexus: Arc<Mutex<AppState>>) -> Result<(), Box<dyn Error>> {
-    let mut last_played_index: i32 = 0; // Initialize with 0 or load this from a persisted source
+    let mut last_played_index: i32 = 0;
 
     loop {
         let nexus_locked = nexus.lock().await;
         let audio_db = &nexus_locked.audio_db;
 
-        match audio_db.select::<Vec<AudioEntry>>("audio").await {
-            Ok(mut audio_entries) => {
-                // Sort the audio_entries by their index in ascending order
-                audio_entries.sort_by_key(|entry| entry.index);
+        let audio_entries = audio_db.select::<Vec<AudioEntry>>("audio").await?;
+        drop(nexus_locked); // Release the lock as soon as it's no longer needed.
 
-                // Filter out entries that have already been played by checking against last_played_index
-                let new_audio_entries = audio_entries
-                    .into_iter()
-                    .filter(|entry| entry.index > last_played_index)
-                    .collect::<Vec<AudioEntry>>();
+        // Filter entries after dropping nexus_locked to avoid borrow issues.
+        let new_audio_entries = audio_entries
+            .into_iter()
+            .filter(|entry| entry.index > last_played_index)
+            .collect::<Vec<_>>();
 
-                for entry in new_audio_entries {
-                    nexus_locked
-                        .playback_send
-                        .send(PlaybackCommand::Play(entry.clone()))
-                        .await
-                        .map_err(|e| Box::new(e) as Box<dyn Error>)?;
+        for entry in new_audio_entries {
+            // Re-acquire lock for each entry to send PlaybackCommand
+            let nexus_locked = nexus.lock().await;
+            nexus_locked
+                .playback_send
+                .send(PlaybackCommand::Play(entry.clone()))
+                .await?;
+            drop(nexus_locked); // Optionally, release lock immediately after use.
 
-                    last_played_index = entry.index;
-                }
-            }
-            Err(e) => {
-                eprintln!("Error querying audio entries: {}", e);
-                sleep(Duration::from_secs(5)).await;
-                continue;
-            }
+            last_played_index = entry.index; // Update last_played_index without borrow conflict.
+
+            // Wait for the audio length duration before considering the next entry
+            tokio::time::sleep(Duration::from_secs_f32(entry.audio_length)).await;
         }
 
-        drop(nexus_locked);
-        sleep(Duration::from_secs(1)).await; // Maintain this sleep to prevent constant querying
+        // Implement a more sophisticated mechanism to break out of the loop if necessary.
+        tokio::time::sleep(Duration::from_secs(1)).await; // Simple delay before next iteration.
     }
 }
 
@@ -73,7 +65,7 @@ pub async fn read_from_sentence(start_index: i32, nexus: Arc<Mutex<AppState>>) {
     // Assuming audio entries are already sorted and unique by index.
     if let Ok(audio_entries) = audio_db.select::<Vec<AudioEntry>>("audio").await {
         for entry in audio_entries.iter().filter(|e| e.index >= start_index) {
-            if entry.entry_finished {
+            if entry.text_finished {
                 break;
             }
             let _ = nexus_locked
@@ -94,11 +86,14 @@ pub async fn speak_text(
     entry_finished: bool,
 ) -> Result<(), Box<dyn Error>> {
     let audio_data = get_speech_from_api(text, speech_service).await?;
-    // Using the STANDARD engine for base64 encoding
-    let encoded_data = general_purpose::STANDARD.encode(&audio_data);
-    add_audio_entry_to_db(text, encoded_data, audio_db, entry_finished)
+    let audio_length = get_audio_length(audio_data.clone()).await?; // Calculate audio length.
+    let encoded_data = general_purpose::STANDARD.encode(audio_data);
+
+    // Now pass audio_length to add_audio_entry_to_db.
+    add_audio_entry_to_db(text, encoded_data, audio_db, entry_finished, audio_length)
         .await
         .map_err(|e| e as Box<dyn Error>)?;
+
     Ok(())
 }
 
@@ -141,14 +136,41 @@ pub struct AudioEntry {
     pub index: i32,
     pub text_content: String,
     pub audio_data: String,
-    pub entry_finished: bool,
+    pub audio_length: f32,
+    pub text_finished: bool,
+}
+
+use minimp3::{Decoder, Frame};
+use std::io::Cursor;
+
+async fn get_audio_length(audio_data: Vec<u8>) -> Result<f32, Box<dyn Error>> {
+    let cursor = Cursor::new(audio_data);
+    let mut decoder = Decoder::new(cursor);
+    let mut total_duration = 0f32;
+
+    // Iterate over each frame in the MP3 file
+    while let Ok(Frame {
+        sample_rate,
+        channels,
+        data,
+        ..
+    }) = decoder.next_frame()
+    {
+        // Calculate the duration of the current frame in seconds
+        let frame_duration = (data.len() as f32) / (sample_rate as f32 * channels as f32 * 2f32);
+        total_duration += frame_duration;
+    }
+
+    // Return the total duration in seconds
+    Ok(total_duration)
 }
 
 async fn add_audio_entry_to_db(
     text: &str,
     encoded_data: String,
     audio_db: Surreal<surrealdb::engine::local::Db>,
-    entry_finished: bool,
+    text_finished: bool,
+    audio_length: f32, // Include audio length as a parameter
 ) -> Result<(), Box<dyn Error>> {
     let highest_index: i32 = get_highest_index(&audio_db).await?;
     let new_index = highest_index + 1;
@@ -156,7 +178,8 @@ async fn add_audio_entry_to_db(
         index: new_index,
         text_content: text.to_string(),
         audio_data: encoded_data,
-        entry_finished,
+        audio_length,
+        text_finished,
     };
     let _: Result<Vec<AudioEntry>, Box<dyn Error>> = audio_db
         .create("audio")

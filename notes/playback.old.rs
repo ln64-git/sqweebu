@@ -1,7 +1,7 @@
 // src/_utils/playback.rs
 
 // region: --- importswWE
-use crate::utils::AudioEntry;
+use crate::utils::{check_empty_sink, AudioEntry};
 use base64::Engine;
 use core::sync::atomic::AtomicBool;
 use rodio::Decoder;
@@ -29,23 +29,29 @@ pub enum PlaybackCommand {
 pub struct PlaybackManager {
     pub sink: Option<Sink>,
     pub sink_empty: Arc<AtomicBool>,
-    pub is_paused: AtomicBool,
+    pub is_paused: Arc<AtomicBool>,
     pub command_queue: VecDeque<PlaybackCommand>,
     pub current_sentence: String,
+    pub playback_send: mpsc::Sender<PlaybackCommand>,
     pub sentence_send: mpsc::Sender<String>,
     pub sentence_storage_send: mpsc::Sender<String>,
     pub sentence_storage_recv: mpsc::Receiver<String>,
 }
 
 impl PlaybackManager {
-    pub fn new(sink: Sink, sentence_send: mpsc::Sender<String>) -> Self {
+    pub fn new(
+        sink: Sink,
+        sentence_send: mpsc::Sender<String>,
+        playback_send: mpsc::Sender<PlaybackCommand>,
+    ) -> Self {
         let (sentence_storage_send, sentence_storage_recv) = mpsc::channel::<String>(32);
         PlaybackManager {
             sink: Some(sink),
             sink_empty: Arc::new(AtomicBool::new(true)),
-            is_paused: AtomicBool::new(false),
+            is_paused: Arc::new(AtomicBool::new(false)),
             command_queue: VecDeque::new(),
             current_sentence: "".to_string(),
+            playback_send,
             sentence_send,
             sentence_storage_send,
             sentence_storage_recv,
@@ -114,11 +120,9 @@ impl PlaybackManager {
     }
     async fn handle_play(&mut self, entry: AudioEntry) -> Result<(), Box<dyn Error>> {
         use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
-
         if entry.text_content.trim().is_empty() {
             return Ok(());
         }
-
         if let Some(ref mut sink) = self.sink {
             let audio_data = BASE64_STANDARD
                 .decode(entry.audio_data.as_bytes())
@@ -126,37 +130,34 @@ impl PlaybackManager {
                     eprintln!("Error decoding base64 audio data: {}", e);
                     Box::new(e) as Box<dyn Error>
                 })?;
-
             match Decoder::new(Cursor::new(audio_data)) {
                 Ok(source) => {
-                    // Immediately set sink_empty to false since we're starting playback
-                    self.sink_empty.store(false, Ordering::SeqCst);
-
-                    // Append the audio source to the sink for playback
                     sink.append(source);
-
-                    // Calculate the delay duration based on audio_length
-                    let audio_length = Duration::from_secs_f32(entry.audio_length);
-                    let text = entry.text_content;
-
-                    // Clone the sink_empty Arc to move into the async block
-                    let sink_empty_clone = self.sink_empty.clone();
-
-                    // Start an asynchronous delay based on the audio_length
+                    self.sink_empty.store(false, Ordering::SeqCst);
+                    // sink.sleep_until_end();
+                    let playback_send_clone = self.playback_send.clone();
+                    let sink_empty_clone = Arc::clone(&self.sink_empty);
+                    let is_paused_clone = Arc::clone(&self.is_paused);
                     tokio::spawn(async move {
-                        println!("{:#?}", text);
-                        tokio::time::sleep(audio_length).await;
-                        println!("{:#?}", audio_length);
-                        // Once the delay is over, mark the sink as empty
-                        sink_empty_clone.store(true, Ordering::SeqCst);
+                        while !sink_empty_clone.load(Ordering::SeqCst)
+                            && !is_paused_clone.load(Ordering::SeqCst)
+                        {
+                            time::sleep(Duration::from_millis(100)).await;
+                            let sink_empty = check_empty_sink(&playback_send_clone)
+                                .await
+                                .unwrap_or(false);
+                            if sink_empty {
+                                sink_empty_clone.store(true, Ordering::SeqCst);
+                            }
+                        }
                     });
+                    self.sink_empty.store(true, Ordering::SeqCst);
                 }
                 Err(e) => {
                     eprintln!("Error creating audio source decoder: {}", e);
                 }
             }
         }
-
         Ok(())
     }
 }
@@ -171,11 +172,13 @@ pub async fn init_playback_channel(sentence_send: mpsc::Sender<String>) -> Sende
         }
     });
 
+    let playback_send_clone_for_thread = playback_send.clone(); // Clone for use in the thread
     std::thread::spawn(move || {
         let rt = tokio::runtime::Runtime::new().unwrap();
         let (_stream, stream_handle) = OutputStream::try_default().unwrap();
         let sink = Sink::try_new(&stream_handle).unwrap();
-        let mut playback = PlaybackManager::new(sink, sentence_send);
+        let mut playback =
+            PlaybackManager::new(sink, sentence_send, playback_send_clone_for_thread);
 
         rt.block_on(async {
             while let Some(command) = queue_recv.recv().await {
@@ -185,5 +188,5 @@ pub async fn init_playback_channel(sentence_send: mpsc::Sender<String>) -> Sende
         });
     });
 
-    playback_send
+    playback_send // This is now fine since we've cloned before moving
 }

@@ -4,7 +4,7 @@
 use _core::io::{process_input, ChatEntry};
 // region: --- imports
 use _core::playback::{init_playback_channel, PlaybackCommand};
-use _core::utils::{listen_audio_database, listen_stop_playback};
+use _core::utils::{check_empty_sink, listen_audio_database};
 use _core::AppState;
 use std::sync::Arc;
 use surrealdb::engine::local::{Mem, RocksDb};
@@ -81,7 +81,7 @@ async fn main() {
     let playback_send_clone = playback_send_clone.clone();
     tokio::spawn(async move {
         // Use a reference to the cloned `Sender` here, as required by the function signature.
-        if let Err(e) = listen_stop_playback(&playback_send_clone).await {
+        if let Err(e) = check_empty_sink(&playback_send_clone).await {
             eprintln!("Error: {:?}", e);
         }
     });

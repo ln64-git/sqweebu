@@ -15,3 +15,4 @@ surrealdb = { version = "1.2.0", features = ["kv-rocksdb", "kv-mem"] }
 tauri-api = "0.7.6"
 chrono = "0.4.35"
 base64 = "0.22.0"
+minimp3 = "0.5.1"
