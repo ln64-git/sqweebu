@@ -24,6 +24,3 @@ Sqweebu is a modular interface that allows users to interact with AI through spe
 - SurrealDB - A multi-model database for building applications
 - Tokio - An asynchronous runtime for Rust
 
-## Getting Started
-
-To run the Sqweebu project locally, follow these steps:
